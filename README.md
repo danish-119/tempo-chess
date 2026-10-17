@@ -49,7 +49,8 @@ All optional; see `.env.example`.
 | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | Canonical URL for metadata, sitemap and robots (e.g. `https://tempo.example.com`) |
 | `NEXT_PUBLIC_REPO_URL` | Public source repository — shown in the footer/About page (needed for GPL source availability). Defaults to https://github.com/danish-119/tempo-chess |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | Support/contact address shown in the footer, About and Privacy pages. Defaults to mdanish.software.dev@gmail.com |
+| `NEXT_PUBLIC_WHATSAPP` | WhatsApp number (digits, international format) for a wa.me contact link on the About page. Defaults to 923001877119 |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Support/contact address shown in the footer and on the About and Privacy pages. Defaults to mdanish.software.dev@gmail.com |
 
 ## The engine
 

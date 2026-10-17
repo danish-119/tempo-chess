@@ -27,7 +27,6 @@ export function SiteFooter() {
           <Link href="/about" className="hover:text-ink">About &amp; licenses</Link>
           <Link href="/privacy" className="hover:text-ink">Privacy</Link>
           <Link href="/terms" className="hover:text-ink">Terms</Link>
-          <Link href="/learn/glossary" className="hover:text-ink">Glossary</Link>
           <a
             href="#shortcuts"
             className="hover:text-ink"

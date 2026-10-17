@@ -5,7 +5,7 @@ import { THRESHOLDS } from "@/lib/review/classify";
 
 export const metadata: Metadata = {
   title: "About & licenses",
-  description: "How Tempo works, how moves are classified, and the open-source software it is built on.",
+  description: "What Tempo is, what you can do with it, how game review works, and the open-source software it is built on.",
   alternates: { canonical: "/about" },
 };
 
@@ -18,6 +18,16 @@ const THIRD_PARTY = [
   { name: "chess.js 1.4", via: "Move generation, validation and PGN parsing", license: "BSD-2-Clause", url: "https://github.com/jhlywa/chess.js" },
   { name: "react-chessboard 5", via: "Board component and default piece set", license: "MIT", url: "https://github.com/Clariity/react-chessboard" },
   { name: "lichess-org/chess-openings", via: "Opening names and ECO codes", license: "CC0-1.0", url: "https://github.com/lichess-org/chess-openings" },
+  { name: "Lichess tablebase & opening explorer", via: "Online services queried at runtime (not bundled): 7-piece endgame results and opening statistics", license: "service", url: "https://lichess.org/api" },
+];
+
+const FEATURES: { title: string; href: string; text: string }[] = [
+  { title: "Play", href: "/play", text: "Ten bots from beginner (≈400) to full-strength Stockfish, a coach who shows threats and grades your moves, or a friend on the same device." },
+  { title: "Review", href: "/review", text: "Import games from Chess.com, Lichess or PGN. Every move is classified, with accuracy, key moments, an evaluation graph and plain-language explanations." },
+  { title: "Analyze", href: "/analyze", text: "Live Stockfish lines, an exact 7-piece endgame tablebase, and an opening explorer with master and Lichess games." },
+  { title: "Practice", href: "/practice", text: "10,000 puzzles by level and theme, Puzzle Rush, 18 key endgames against perfect defence, and a coordinate trainer." },
+  { title: "Learn", href: "/learn", text: "22 openings to watch and practise, 27 tactics and mating patterns with real examples, and a 116-term glossary." },
+  { title: "Editor", href: "/editor", text: "Set up any position, then analyze it, play it out against a bot, or share it as a link or image." },
 ];
 
 export default function AboutPage() {
@@ -26,17 +36,56 @@ export default function AboutPage() {
       <header>
         <h1 className="font-serif text-3xl font-semibold tracking-tight">About Tempo</h1>
         <p className="mt-2 text-ink-2">
-          Tempo is a free, open-source chess analysis tool. It runs the Stockfish engine inside your browser, so reviewing a game costs nothing and your
-          games are never uploaded anywhere.
+          Tempo is a free, open-source place to play, review, practise and learn chess. The Stockfish engine runs inside your browser, so there is no
+          server, no account and no subscription — every feature is free and unlimited, and your games never leave your device.
         </p>
-        <p className="mt-2 text-ink-2">
-          Made by{" "}
-          <a href={SITE.author.url} className="underline" rel="noopener noreferrer" target="_blank">
+        <p className="mt-3 text-ink-2">
+          Built by{" "}
+          <a href={SITE.author.url} className="font-medium text-ink underline" rel="noopener noreferrer" target="_blank">
             {SITE.author.name}
           </a>
-          .
+          {SITE.repoUrl ? (
+            <>
+              {" "}
+              · <a href={SITE.repoUrl} className="underline" rel="noopener noreferrer" target="_blank">source on GitHub</a>
+            </>
+          ) : null}
         </p>
       </header>
+
+      <section aria-labelledby="features-h" className="space-y-3">
+        <h2 id="features-h" className="font-serif text-2xl font-semibold">What you can do</h2>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {FEATURES.map((f) => (
+            <li key={f.href}>
+              <Link href={f.href} className="block h-full rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent hover:bg-accent-soft">
+                <span className="font-semibold">{f.title}</span>
+                <span className="mt-1 block text-sm text-ink-2">{f.text}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="how-h" className="space-y-2">
+        <h2 id="how-h" className="font-serif text-2xl font-semibold">How it works</h2>
+        <ul className="list-disc space-y-1 pl-5 text-ink-2">
+          <li>
+            <strong>Engine in your browser.</strong> Stockfish 19 (WebAssembly) uses several CPU cores when your browser allows it, and works offline once
+            loaded.
+          </li>
+          <li>
+            <strong>No backend, no database.</strong> Tempo is a static website. Games, reviews and settings are stored only in your browser.
+          </li>
+          <li>
+            <strong>Public data only.</strong> Game imports use the public Chess.com and Lichess APIs; endgame results and opening statistics come from
+            Lichess&apos;s free services.
+          </li>
+          <li>
+            <strong>No AI guesswork.</strong> Explanations come from fixed rules checked against the engine&apos;s lines.
+          </li>
+        </ul>
+      </section>
 
       <section id="method" aria-labelledby="method-h" className="scroll-mt-20 space-y-3">
         <h2 id="method-h" className="font-serif text-2xl font-semibold">How a review works</h2>
@@ -80,8 +129,10 @@ export default function AboutPage() {
       <section aria-labelledby="privacy-h" className="space-y-2">
         <h2 id="privacy-h" className="font-serif text-2xl font-semibold">Privacy in one paragraph</h2>
         <p className="text-ink-2">
-          No accounts, no cookies, no analytics. Games, reviews and settings are kept in your browser (IndexedDB / localStorage). The
-          only network requests besides loading the site are to <code>api.chess.com</code> when you look up a username. Details: <Link href="/privacy" className="underline">privacy policy</Link>.
+          No accounts, no cookies, no analytics. Games, reviews and settings are kept in your browser (IndexedDB / localStorage). Besides loading the
+          site, your browser only contacts <code>api.chess.com</code> or <code>lichess.org</code> when you import games, the Lichess tablebase for
+          positions with 7 pieces or fewer, and the Lichess opening explorer if you choose to connect a Lichess account. Share links keep the game in the
+          link itself, so nothing is uploaded. Details: <Link href="/privacy" className="underline">privacy policy</Link>.
         </p>
       </section>
 
@@ -121,9 +172,20 @@ export default function AboutPage() {
       {SITE.contactEmail ? (
         <section id="contact" aria-labelledby="contact-h" className="scroll-mt-20 space-y-2">
           <h2 id="contact-h" className="font-serif text-2xl font-semibold">Contact</h2>
-          <p className="text-ink-2">
-            Questions, bugs or ideas: <a href={`mailto:${SITE.contactEmail}`} className="underline">{SITE.contactEmail}</a>
-          </p>
+          <p className="text-ink-2">Questions, bugs or ideas — get in touch:</p>
+          <ul className="space-y-1 text-ink-2">
+            <li>
+              Email: <a href={`mailto:${SITE.contactEmail}`} className="underline">{SITE.contactEmail}</a>
+            </li>
+            {SITE.whatsapp ? (
+              <li>
+                WhatsApp:{" "}
+                <a href={`https://wa.me/${SITE.whatsapp}`} className="underline" rel="noopener noreferrer" target="_blank">
+                  +{SITE.whatsapp.slice(0, 2)} {SITE.whatsapp.slice(2, 5)} {SITE.whatsapp.slice(5)}
+                </a>
+              </li>
+            ) : null}
+          </ul>
         </section>
       ) : null}
     </div>
