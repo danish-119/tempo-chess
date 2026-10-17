@@ -79,6 +79,13 @@ test.describe("Tempo", () => {
     await page.getByRole("button", { name: "Annotated PGN" }).click();
     const file = await download;
     expect(file.suggestedFilename()).toMatch(/_tempo\.pgn$/);
+    // Reopening a reviewed game shows the saved review and never starts a new one.
+    await page.reload();
+    await page.getByRole("tab", { name: "Review" }).click();
+    await expect(page.getByRole("button", { name: /Next key moment/ })).toBeVisible({ timeout: 10_000 });
+    await page.waitForTimeout(3000);
+    await expect(page.getByText(/Reviewing/)).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Next key moment/ })).toBeVisible();
   });
 
   test("saved games survive a reload", async ({ page }) => {

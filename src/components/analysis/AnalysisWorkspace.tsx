@@ -382,13 +382,19 @@ function Workspace({ initialGame, initialPly, initialPanel }: { initialGame: Imp
     }
   };
 
-  const startFullReview = async () => {
+  const startFullReview = async (onlyIfUnreviewed = false) => {
     setRetry(null);
     setDeeper(false);
     const eng = engineInstance ?? (await engine.load());
     if (!eng) return;
+    // Auto-start: the saved review may have loaded while the engine was starting.
+    if (onlyIfUnreviewed && reviewStateRef.current.status !== "idle") return;
     void startReview(eng, preset);
   };
+  const reviewStateRef = useRef(reviewState);
+  useEffect(() => {
+    reviewStateRef.current = reviewState;
+  }, [reviewState]);
 
   // Analyse once, automatically, when an imported game without a review opens.
   const autoStarted = useRef(false);
@@ -400,7 +406,7 @@ function Workspace({ initialGame, initialPly, initialPanel }: { initialGame: Imp
     const t = setTimeout(() => {
       if (autoStarted.current) return;
       autoStarted.current = true;
-      void startFullReview();
+      void startFullReview(true);
     }, 0);
     return () => clearTimeout(t);
   });
@@ -650,14 +656,14 @@ function Workspace({ initialGame, initialPly, initialPanel }: { initialGame: Imp
                 </details>
                 <details className="no-print">
                   <summary className="cursor-pointer text-xs text-ink-3">Re-run with different settings</summary>
-                  <ReviewControls preset={preset} setPreset={setPreset} onStart={startFullReview} disabled={engine.status.state === "loading"} label="Re-run review" />
+                  <ReviewControls preset={preset} setPreset={setPreset} onStart={() => void startFullReview()} disabled={engine.status.state === "loading"} label="Re-run review" />
                 </details>
               </div>
             ) : (
               <div className="space-y-3">
                 {reviewState.status === "cancelled" ? <Alert tone="info">Review cancelled.</Alert> : null}
                 {reviewState.status === "error" ? <Alert tone="error" title="Review failed">{reviewState.message}</Alert> : null}
-                <ReviewControls preset={preset} setPreset={setPreset} onStart={startFullReview} disabled={engine.status.state === "loading" || game.moves.length === 0} label="Start full review" />
+                <ReviewControls preset={preset} setPreset={setPreset} onStart={() => void startFullReview()} disabled={engine.status.state === "loading" || game.moves.length === 0} label="Start full review" />
                 {engine.status.state === "error" ? (
                   <Alert tone="error" title="Engine unavailable" action={<Button size="sm" onClick={() => void engine.retry()}>Retry</Button>}>
                     {engine.status.message}

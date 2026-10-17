@@ -17,7 +17,9 @@ export type ReviewState =
   | { status: "error"; message: string };
 
 export function useReview(game: ImportedGame | null) {
-  const [state, setState] = useState<ReviewState>({ status: "idle" });
+  // Start in "loading-saved" when there is a game: until the stored review has been
+  // looked up, nothing may treat the game as unreviewed (and auto-start a new review).
+  const [state, setState] = useState<ReviewState>(() => (game ? { status: "loading-saved" } : { status: "idle" }));
   const abortRef = useRef<AbortController | null>(null);
   // Position cache survives cancel/restart so resumed reviews skip finished work.
   const cacheRef = useRef<{ key: string; map: Map<string, PositionEval> } | null>(null);
