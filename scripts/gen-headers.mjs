@@ -9,6 +9,9 @@ const entries = Object.entries(SECURITY_HEADERS);
 
 const vercel = {
   $schema: "https://openapi.vercel.sh/vercel.json",
+  // Static export: deploy out/ as plain files. The Next.js preset would expect a
+  // server build (.next / routes-manifest.json) and fail with NEXT_NO_ROUTES_MANIFEST.
+  framework: null,
   buildCommand: "npm run build",
   outputDirectory: "out",
   cleanUrls: true,

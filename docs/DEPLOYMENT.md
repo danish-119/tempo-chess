@@ -5,7 +5,7 @@ Tempo builds to a static folder (`out/`). Any static host works if it can send c
 ## Vercel (recommended)
 
 1. Push the repository to GitHub (public, for GPL source availability).
-2. Import it in Vercel. The framework preset is detected; `vercel.json` already sets `buildCommand`, `outputDirectory: out` and all headers.
+2. Import it in Vercel. `vercel.json` already sets `framework: null` (static site), `buildCommand`, `outputDirectory: out` and all headers — leave the project's Framework Preset / Output Directory overrides off. (With the Next.js preset the build fails with `NEXT_NO_ROUTES_MANIFEST`, because a static export has no `routes-manifest.json`.)
 3. Optional env vars (Project → Settings → Environment Variables): `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_REPO_URL`, `NEXT_PUBLIC_CONTACT_EMAIL`.
 4. Deploy. Verify (see checklist below).
 
