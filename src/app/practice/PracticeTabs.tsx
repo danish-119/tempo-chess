@@ -38,7 +38,7 @@ export function PracticeTabs() {
 
   const choose = (m: Mode) => {
     const url = new URL(window.location.href);
-    url.search = "";
+    url.search = ""; // drop the other mode's settings (level, theme, puzzle id, …)
     url.searchParams.set("mode", m);
     window.history.pushState(window.history.state, "", url);
     pushed.current = true;
@@ -94,7 +94,7 @@ export function PracticeTabs() {
       ) : mode === "coordinates" ? (
         <CoordinateTrainer />
       ) : (
-        <PracticeView initialLevel={params.get("level")} initialTheme={params.get("theme")} />
+        <PracticeView initialLevel={params.get("level")} initialTheme={params.get("theme")} initialId={params.get("id")} />
       )}
     </>
   );

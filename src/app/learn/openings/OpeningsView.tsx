@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Lightbulb, RotateCcw, Search, Swords } from "lucide-react";
 import { ModeToggle } from "@/components/board/ModeToggle";
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { Alert, Button, ButtonLink, Card, IconButton } from "@/components/ui/primitives";
 import { useSound } from "@/hooks/useSound";
 import { START_FEN } from "@/lib/chess/types";
@@ -182,6 +183,9 @@ function OpeningLessonView({ opening, onBack }: { opening: OpeningLesson; onBack
         </Card>
 
         <div className="grid grid-cols-2 gap-2">
+          <div className="col-span-2">
+            <CopyLinkButton />
+          </div>
           <ButtonLink size="sm" newTab href={`/analyze?fen=${encodeURIComponent(finalFen)}`}>
             <Search className="size-4" aria-hidden /> Analyze
           </ButtonLink>

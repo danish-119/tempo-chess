@@ -5,6 +5,7 @@ import { Chess, validateFen } from "chess.js";
 import { ArrowLeft, Lightbulb, RotateCcw, Undo2 } from "lucide-react";
 import { ModeToggle } from "@/components/board/ModeToggle";
 import { StepControls } from "@/components/board/StepControls";
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { Board, type BoardArrow } from "@/components/board/Board";
 import { Alert, Button, Card, IconButton, Spinner } from "@/components/ui/primitives";
 import { useSound } from "@/hooks/useSound";
@@ -419,6 +420,7 @@ function Trainer({ lesson, onBack }: { lesson: EndgameLesson; onBack: () => void
                 <Lightbulb className="size-4" aria-hidden /> Hint
               </Button>
             ) : null}
+            <CopyLinkButton />
             {!demo ? (
               <Button size="sm" onClick={restart}>
                 <RotateCcw className="size-4" aria-hidden /> Restart

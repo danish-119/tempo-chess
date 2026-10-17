@@ -7,6 +7,7 @@ import { Alert, Button, ButtonLink, Card, IconButton, Spinner } from "@/componen
 import { TACTICS, TACTIC_GROUPS, type TacticLesson, examplesFor, tacticByTheme } from "@/lib/learn/tactics";
 import { type Puzzle, loadPuzzles, preparePuzzle } from "@/lib/puzzles";
 import { setQuery } from "@/lib/url";
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { LineViewer, buildUciLine } from "../LineViewer";
 
 /** Themes with enough bundled puzzles to practise on their own. */
@@ -127,6 +128,7 @@ function TacticLessonView({ tactic, onBack }: { tactic: TacticLesson; onBack: ()
                   <Shuffle className="size-4" aria-hidden /> Another example
                 </Button>
               ) : null}
+              <CopyLinkButton />
               {count >= PRACTICE_MIN ? (
                 <ButtonLink size="sm" variant="primary" href={`/practice?mode=puzzles&level=any&theme=${encodeURIComponent(tactic.theme)}`}>
                   <PuzzleIcon className="size-4" aria-hidden /> Practise {count} puzzles

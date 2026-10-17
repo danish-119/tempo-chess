@@ -21,6 +21,7 @@ import {
   themeOptions,
 } from "@/lib/puzzles";
 import { setQuery } from "@/lib/url";
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 
 type Status = "setup" | "solving" | "wrong" | "solved" | "revealed";
 
@@ -29,7 +30,7 @@ const NON_CLUE_THEMES = new Set(["opening", "middlegame", "endgame", "advantage"
 
 type LevelId = (typeof LEVELS)[number]["id"];
 
-export function PracticeView({ initialLevel, initialTheme }: { initialLevel?: string | null; initialTheme?: string | null }) {
+export function PracticeView({ initialLevel, initialTheme, initialId }: { initialLevel?: string | null; initialTheme?: string | null; initialId?: string | null }) {
   const sound = useSound();
   const [all, setAll] = useState<Puzzle[] | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -44,6 +45,7 @@ export function PracticeView({ initialLevel, initialTheme }: { initialLevel?: st
     setQuery({ theme: t || null });
   };
   const [current, setCurrent] = useState<PreparedPuzzle | null>(null);
+  const sharedId = useRef<string | null>(initialId ?? null);
   const [fen, setFen] = useState<string>("");
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<Status>("setup");
@@ -81,13 +83,17 @@ export function PracticeView({ initialLevel, initialTheme }: { initialLevel?: st
   const next = useCallback(() => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
-    const p = pickRandom(pool, seen.current);
+    // A shared link opens that exact puzzle first, whatever the filters.
+    const shared = sharedId.current ? all?.find((x) => x.id === sharedId.current) : undefined;
+    sharedId.current = null;
+    const p = shared ?? pickRandom(pool, seen.current);
     const prepared = p ? preparePuzzle(p) : null;
     if (!prepared) {
       setCurrent(null);
       return;
     }
     seen.current.add(prepared.puzzle.id);
+    setQuery({ id: prepared.puzzle.id });
     setCurrent(prepared);
     setFen(prepared.setupFen);
     setLastMove(null);
@@ -109,7 +115,7 @@ export function PracticeView({ initialLevel, initialTheme }: { initialLevel?: st
       setTimer({ start: t0, stop: null });
       setStatus("solving");
     }, 600);
-  }, [pool, sound]);
+  }, [pool, sound, all]);
 
   // Start (and restart when filters change).
   useEffect(() => {
@@ -270,6 +276,9 @@ export function PracticeView({ initialLevel, initialTheme }: { initialLevel?: st
           <Card className="space-y-3 p-4" aria-live="polite">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-ink-3">Puzzle</span>
+              <span className="ml-auto">
+                <CopyLinkButton />
+              </span>
               <span
                 className={cx(
                   "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs tabular",
