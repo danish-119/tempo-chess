@@ -23,8 +23,7 @@ const THIRD_PARTY = [
 
 const FEATURES: { title: string; href: string; text: string }[] = [
   { title: "Play", href: "/play", text: "Ten bots from beginner (≈400) to full-strength Stockfish, a coach who shows threats and grades your moves, or a friend on the same device." },
-  { title: "Review", href: "/review", text: "Import games from Chess.com, Lichess or PGN. Every move is classified, with accuracy, key moments, an evaluation graph and plain-language explanations." },
-  { title: "Analyze", href: "/analyze", text: "Live Stockfish lines, an exact 7-piece endgame tablebase, and an opening explorer with master and Lichess games." },
+  { title: "Review & analyze", href: "/review", text: "Import a game from Chess.com, Lichess or PGN and it opens on the analysis board: every move classified, accuracy, key moments and an evaluation graph, plus live Stockfish lines, an exact 7-piece endgame tablebase and an opening explorer." },
   { title: "Practice", href: "/practice", text: "10,000 puzzles by level and theme, Puzzle Rush, 18 key endgames against perfect defence, and a coordinate trainer." },
   { title: "Learn", href: "/learn", text: "22 openings to watch and practise, 27 tactics and mating patterns with real examples, and a 116-term glossary." },
   { title: "Editor", href: "/editor", text: "Set up any position, then analyze it, play it out against a bot, or share it as a link or image." },
