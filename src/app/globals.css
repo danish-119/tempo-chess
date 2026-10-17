@@ -1,0 +1,238 @@
+@import "tailwindcss";
+
+/*
+ * Tempo design tokens. Neutral "paper & ink" surfaces, one brass accent,
+ * semantic colours reserved for move quality. Light and dark themes are
+ * driven by [data-theme] on <html> (set before paint by an inline script),
+ * falling back to the OS preference.
+ */
+:root {
+  color-scheme: light;
+  --bg: #e9e7e1;
+  --surface: #f6f4ef;
+  --surface-2: #dfdcd4;
+  --border: #cdc8bd;
+  --ink: #1d1b18;
+  --ink-2: #4f4a42;
+  --ink-3: #6f695f;
+  --accent: #8a5a1f;
+  --accent-ink: #ffffff;
+  --accent-soft: #f3e6d2;
+  --focus: #1d5fd6;
+
+  --good: #2f7d4f;
+  --good-soft: #e1f1e6;
+  --warn: #9a6400;
+  --warn-soft: #fbefd5;
+  --bad: #b3261e;
+  --bad-soft: #fbe3e1;
+  --info: #2f5f9e;
+  --info-soft: #e2ebf7;
+
+  /* Move-class colours (Tempo's own palette) */
+  --c-brilliant: #0f8a8f;
+  --c-book: #8a6a45;
+  --c-forced: #6f695f;
+  --c-only: #2f5f9e;
+  --c-best: #1f7a4a;
+  --c-excellent: #3f8f5f;
+  --c-good: #5b8a7a;
+  --c-inaccuracy: #b07d00;
+  --c-mistake: #c45a12;
+  --c-blunder: #b3261e;
+  --c-missed: #7a3fa3;
+
+  /* Board: cool slate squares */
+  --sq-light: #e4e8ed;
+  --sq-dark: #8295ab;
+  --sq-last: rgba(214, 170, 60, 0.55);
+  --sq-select: rgba(29, 95, 214, 0.38);
+  --sq-check: radial-gradient(circle, rgba(220, 38, 38, 0.85) 0%, rgba(220, 38, 38, 0.35) 45%, transparent 75%);
+  --arrow-best: rgba(31, 122, 74, 0.85);
+  --arrow-alt: rgba(47, 95, 158, 0.75);
+  --arrow-played: rgba(196, 90, 18, 0.8);
+  --arrow-threat: rgba(200, 30, 30, 0.8);
+
+  --eval-white: #f4f2ee;
+  --eval-black: #2a2723;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(29, 27, 24, 0.06), 0 4px 16px rgba(29, 27, 24, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #26282c;
+    --surface: #2e3035;
+    --surface-2: #383b41;
+    --border: #474a52;
+    --ink: #eeeae2;
+    --ink-2: #c3bdb1;
+    --ink-3: #9a9488;
+    --accent: #d9a35b;
+    --accent-ink: #1d1b18;
+    --accent-soft: #3a2f20;
+    --focus: #7aa7ff;
+    --good: #5cc28a;
+    --good-soft: #1d3326;
+    --warn: #e0b04a;
+    --warn-soft: #3a3019;
+    --bad: #f07167;
+    --bad-soft: #3d1f1d;
+    --info: #7aa7e8;
+    --info-soft: #1e2a3b;
+    --c-brilliant: #3cc8cd;
+    --c-book: #c49a6c;
+    --c-forced: #9a9488;
+    --c-only: #7aa7e8;
+    --c-best: #5cc28a;
+    --c-excellent: #7fcf9f;
+    --c-good: #8fb8aa;
+    --c-inaccuracy: #e0b04a;
+    --c-mistake: #f08a4b;
+    --c-blunder: #f07167;
+    --c-missed: #c08ae8;
+    --sq-light: #c9d0d9;
+    --sq-dark: #6a7d94;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #26282c;
+  --surface: #2e3035;
+  --surface-2: #383b41;
+  --border: #474a52;
+  --ink: #eeeae2;
+  --ink-2: #c3bdb1;
+  --ink-3: #9a9488;
+  --accent: #d9a35b;
+  --accent-ink: #1d1b18;
+  --accent-soft: #3a2f20;
+  --focus: #7aa7ff;
+  --good: #5cc28a;
+  --good-soft: #1d3326;
+  --warn: #e0b04a;
+  --warn-soft: #3a3019;
+  --bad: #f07167;
+  --bad-soft: #3d1f1d;
+  --info: #7aa7e8;
+  --info-soft: #1e2a3b;
+  --c-brilliant: #3cc8cd;
+  --c-book: #c49a6c;
+  --c-forced: #9a9488;
+  --c-only: #7aa7e8;
+  --c-best: #5cc28a;
+  --c-excellent: #7fcf9f;
+  --c-good: #8fb8aa;
+  --c-inaccuracy: #e0b04a;
+  --c-mistake: #f08a4b;
+  --c-blunder: #f07167;
+  --c-missed: #c08ae8;
+  --sq-light: #c9d0d9;
+  --sq-dark: #6a7d94;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --radius-card: var(--radius);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 100;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.skip-link:focus {
+  left: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .card {
+    box-shadow: none;
+    border-color: #ccc;
+    break-inside: avoid;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
