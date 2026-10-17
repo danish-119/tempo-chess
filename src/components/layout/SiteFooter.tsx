@@ -27,16 +27,6 @@ export function SiteFooter() {
           <Link href="/about" className="hover:text-ink">About &amp; licenses</Link>
           <Link href="/privacy" className="hover:text-ink">Privacy</Link>
           <Link href="/terms" className="hover:text-ink">Terms</Link>
-          <a
-            href="#shortcuts"
-            className="hover:text-ink"
-            onClick={(e) => {
-              e.preventDefault();
-              window.dispatchEvent(new Event("tempo:shortcuts"));
-            }}
-          >
-            Keyboard shortcuts
-          </a>
           {SITE.repoUrl ? (
             <a href={SITE.repoUrl} className="hover:text-ink" rel="noopener noreferrer" target="_blank">
               Source code
