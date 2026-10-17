@@ -12,10 +12,8 @@ Tempo lets you play bots, a coach or a friend, review your games move by move, p
 | **Review** — import from Chess.com, Lichess or PGN | **Play** — bots, a coach or a friend |
 | ![Puzzles](docs/screenshots/puzzles.png) | ![Endgame trainer](docs/screenshots/endgames.png) |
 | **Puzzles** — 10,000, by level and theme | **Endgames** — against perfect tablebase defence |
-| ![Learn openings](docs/screenshots/openings.png) | ![Tactics](docs/screenshots/tactics.png) |
-| **Openings** — watch the main line, then practise it | **Tactics** — 27 motifs with real examples |
-| ![Settings](docs/screenshots/settings.png) | ![Board editor](docs/screenshots/editor.png) |
-| **Settings** — board themes and piece sets | **Board editor** — set up any position |
+| ![Tactics](docs/screenshots/tactics.png) | ![Settings](docs/screenshots/settings.png) |
+| **Learn** — 27 tactics with real examples, openings and a glossary | **Settings** — board themes and piece sets |
 
 - Import public **Chess.com** or **Lichess** games by username, paste a Lichess game link, upload `.pgn` files, or paste PGN.
 - **Full game review**: every move classified (Brilliant, Great, Best, Excellent, Good, Book, Inaccuracy, Mistake, Miss, Blunder), per-player accuracy, key moments, an evaluation graph and move-quality badges on the board.
