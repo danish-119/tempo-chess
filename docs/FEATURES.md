@@ -12,7 +12,7 @@
 
 **Board editor** — set up any position (drag from the palettes or click to place, erase, side to move, castling rights, FEN in/out, legality checks), then Analyze it, Play from here against any bot or the coach, or (≤ 7 pieces) practise it against perfect defence. Copy a link to the position or download it as an image.
 
-**Sharing** — Copy share link packs the game (compressed PGN) into the link's #fragment, so nothing is uploaded; opening it imports the game. Board image downloads the current position as a PNG in your board colours and pieces. Press `?` for keyboard shortcuts. **Play in Person** — same-device games with flip / two equal boards / fixed views, optional clocks for both players, Undo, Draw and Resign (for the side to move), then Review this game.
+**Sharing** — every puzzle, endgame, opening and tactic has its own link (Copy link button; a shared puzzle link opens that exact puzzle). Copy share link packs the game (compressed PGN) into the link's #fragment, so nothing is uploaded; opening it imports the game. Board image downloads the current position as a PNG in your board colours and pieces. Press `?` for keyboard shortcuts. **Play in Person** — same-device games with flip / two equal boards / fixed views, optional clocks for both players, Undo, Draw and Resign (for the side to move), then Review this game.
 
 **Appearance** — 8 board colour themes and 10 piece sets; settings open in a modal.
 

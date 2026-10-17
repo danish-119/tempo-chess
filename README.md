@@ -2,6 +2,15 @@
 
 Tempo lets you play bots, a coach or a friend, review your games move by move, practise with puzzles and endgames, and learn openings and tactics. Stockfish 19 runs **inside your browser** (WebAssembly), so there is no backend, no database, no account and no upload of your games.
 
+![Game review: every move graded, with accuracy, key moments and an evaluation graph](docs/screenshots/review.png)
+
+| | |
+| --- | --- |
+| ![Play with a bot or the coach](docs/screenshots/play.png) | ![Puzzles](docs/screenshots/puzzles.png) |
+| **Play** — bots, a coach or a friend | **Puzzles** — 10,000, by level and theme |
+| ![Endgame trainer](docs/screenshots/endgames.png) | ![Learn openings](docs/screenshots/openings.png) |
+| **Endgames** — against perfect tablebase defence | **Learn** — openings, tactics and a glossary |
+
 - Import public **Chess.com** or **Lichess** games by username, paste a Lichess game link, upload `.pgn` files, or paste PGN.
 - **Full game review**: every move classified (Brilliant, Great, Best, Excellent, Good, Book, Inaccuracy, Mistake, Miss, Blunder), per-player accuracy, key moments, an evaluation graph and move-quality badges on the board.
 - **Deterministic explanations** (no AI): forks, pins, hanging pieces and mates are named only when the engine line proves them.
@@ -11,11 +20,12 @@ Tempo lets you play bots, a coach or a friend, review your games move by move, p
 - **Endgames**: 18 key endgames against perfect tablebase defence, with Watch | Practice. **Coordinates** trainer (find, name or colour the square; timed or untimed).
 - **Learn**: 22 openings (watch, then practise your side), 27 tactics / mating patterns with real examples, and a searchable 116-term glossary.
 - **Board editor**: set up any position, then analyze it or play it out against a bot.
-- **Share**: game links packed into the URL fragment (no upload) and PNG board images.
+- **Share**: game links packed into the URL fragment (no upload), links to any puzzle, endgame, opening or tactic, and PNG board images.
 - **Endgame tablebase** (≤ 7 pieces) and **opening explorer** (Masters + Lichess games; optional "Connect Lichess" login, done in the browser with OAuth PKCE). Retry any mistake from a review.
 - **Exports**: original PGN, annotated PGN (`[%eval]`, NAGs, comments, best-line variations), FEN, printable report.
 - **Appearance**: 8 board themes, 10 piece sets, light/dark mode, sounds (Lichess SFX); settings open in a modal.
 - Reviews saved locally in the browser (IndexedDB) so reopening a game is instant; keyboard navigation; one-screen desktop layout and mobile layout.
+
 
 ## Quick start
 
