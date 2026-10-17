@@ -29,8 +29,22 @@ function resolveFile(urlPath) {
   const clean = normalize(decodeURIComponent(urlPath.split("?")[0])).replace(/^([/\\])+/, "");
   const candidate = resolve(root, clean);
   if (!candidate.startsWith(root)) return null; // path traversal guard
-  const options = [candidate, `${candidate}.html`, join(candidate, "index.html")];
+  const options = [candidate, `${candidate}.html`, join(candidate, "index.html"), ...segmentFallbacks(candidate)];
   return options.find((p) => existsSync(p) && statSync(p).isFile()) ?? null;
+}
+
+/**
+ * Next's router prefetches "__next.<segments>.__PAGE__.txt"; on Windows the export
+ * writes these as folders ("__next.play/__PAGE__.txt"). Try those folder forms.
+ */
+function segmentFallbacks(file) {
+  const name = file.slice(Math.max(file.lastIndexOf("/"), file.lastIndexOf("\\")) + 1);
+  if (!name.startsWith("__next.") || !name.endsWith(".txt")) return [];
+  const dir = file.slice(0, file.length - name.length);
+  const parts = name.slice(0, -4).split(".");
+  const out = [];
+  for (let k = 2; k < parts.length; k++) out.push(join(dir, parts.slice(0, k).join("."), `${parts.slice(k).join("/")}.txt`));
+  return out;
 }
 
 createServer((req, res) => {
