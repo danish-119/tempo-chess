@@ -54,7 +54,7 @@ export default function AboutPage() {
 
       <section aria-labelledby="features-h" className="space-y-3">
         <h2 id="features-h" className="font-serif text-2xl font-semibold">What you can do</h2>
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-3 sm:grid-cols-2 sm:[&>li:last-child:nth-child(odd)]:col-span-2">
           {FEATURES.map((f) => (
             <li key={f.href}>
               <Link href={f.href} className="block h-full rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent hover:bg-accent-soft">
