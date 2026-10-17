@@ -7,6 +7,7 @@ export const SITE = {
   url: (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, ""),
   /** Public source repository (required for GPL source availability). */
   repoUrl: process.env.NEXT_PUBLIC_REPO_URL ?? "https://github.com/danish-119/tempo-chess",
+  author: { name: "Danish", url: "https://danish-developer.vercel.app/" },
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "mdanish.software.dev@gmail.com",
 };
 

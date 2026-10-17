@@ -16,6 +16,12 @@ export function SiteFooter() {
         <div className="space-y-2">
           <p className="font-serif text-base text-ink">Tempo</p>
           <p className="max-w-sm">Free and open source. Analysis by Stockfish, running in your browser.</p>
+          <p>
+            Made by{" "}
+            <a href={SITE.author.url} className="font-medium text-ink underline-offset-2 hover:underline" rel="noopener noreferrer" target="_blank">
+              {SITE.author.name}
+            </a>
+          </p>
         </div>
         <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2 sm:justify-end">
           <Link href="/about" className="hover:text-ink">About &amp; licenses</Link>

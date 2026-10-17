@@ -29,6 +29,13 @@ export default function AboutPage() {
           Tempo is a free, open-source chess analysis tool. It runs the Stockfish engine inside your browser, so reviewing a game costs nothing and your
           games are never uploaded anywhere.
         </p>
+        <p className="mt-2 text-ink-2">
+          Made by{" "}
+          <a href={SITE.author.url} className="underline" rel="noopener noreferrer" target="_blank">
+            {SITE.author.name}
+          </a>
+          .
+        </p>
       </header>
 
       <section id="method" aria-labelledby="method-h" className="scroll-mt-20 space-y-3">
