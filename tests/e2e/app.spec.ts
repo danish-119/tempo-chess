@@ -281,6 +281,36 @@ test.describe("Tempo", () => {
     await page.getByRole("button", { name: /^Coordinates/ }).click();
     await page.getByRole("button", { name: "Start" }).click();
     await expect(page.getByText(/^[a-h][1-8]$/)).toBeVisible();
+    await page.getByRole("button", { name: "Stop" }).click();
+    // Name the square: four answer buttons.
+    await page.getByRole("radio", { name: "Name the square" }).click();
+    await page.getByRole("button", { name: "Again" }).click();
+    await expect(page.getByRole("button", { name: /^[a-h][1-8]$/ })).toHaveCount(4);
+    await page.getByRole("button", { name: "Stop" }).click();
+    // Light or dark: answer once, the score moves.
+    await page.getByRole("radio", { name: "Light or dark" }).click();
+    await page.getByRole("button", { name: "Again" }).click();
+    await page.getByRole("button", { name: /light/i }).click();
+    await expect(page.getByText(/^(100|0)%$/)).toBeVisible();
+  });
+
+  test("a shared puzzle link opens that exact puzzle", async ({ page }) => {
+    await page.goto("/practice?mode=puzzles&level=expert&id=U3xCb");
+    await expect(page.getByText(/to move — find the best move/)).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/id=U3xCb/);
+    await page.getByRole("button", { name: "Solution" }).click();
+    await expect(page.getByText(/^Rating 1201/)).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("glossary search filters terms and links to lessons", async ({ page }) => {
+    await page.goto("/learn/glossary");
+    await page.getByRole("searchbox", { name: "Search the glossary" }).fill("en passant");
+    await expect(page.locator("dt", { hasText: "En passant" })).toBeVisible();
+    await expect(page.locator("dt")).toHaveCount(1);
+    await page.getByRole("searchbox", { name: "Search the glossary" }).fill("");
+    await page.getByRole("radio", { name: "Tactics" }).click();
+    await page.locator("#fork").getByRole("link", { name: /Learn with examples/ }).click();
+    await expect(page).toHaveURL(/\/learn\/tactics\?t=fork/);
   });
 
   test("learn an opening: watch, then practise the main line", async ({ page }) => {
