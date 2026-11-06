@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { setQuery } from "@/lib/url";
+import { coachSpeechText, sanToSpeech, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess, validateFen } from "chess.js";
 import {
   Check,
   Columns2,
+  Volume2,
   Flame,
   Hourglass,
   Infinity,
@@ -156,7 +158,7 @@ function KingIcon({ color, set }: { color: Color; set: string }) {
 export function PlayView() {
   const router = useRouter();
   const params = useSearchParams();
-  const { settings } = useSettings();
+  const { settings, update: updateSettings } = useSettings();
   const [startFen, setStartFen] = useState(() => {
     const f = params.get("fen");
     return f && validateFen(f).ok ? new Chess(f).fen() : START_FEN;
@@ -683,6 +685,23 @@ export function PlayView() {
     return 0;
   })();
   const latestFeedback = latestFeedbackPly ? feedback[latestFeedbackPly] : null;
+
+  // The coach speaks each new piece of feedback once (not when a saved game is reopened).
+  const spokenPly = useRef<number | null>(null);
+  const voiceOn = settings.coachVoice && coach && coachOpts.feedback;
+  const spokenText = latestFeedback ? coachSpeechText(latestFeedback, plies[latestFeedbackPly - 1]?.san) : "";
+  useEffect(() => {
+    if (spokenPly.current === null || latestFeedbackPly <= spokenPly.current) {
+      spokenPly.current = latestFeedbackPly; // first render, undo or a new game: stay quiet
+      return;
+    }
+    spokenPly.current = latestFeedbackPly;
+    if (voiceOn && phase === "playing" && spokenText) speak(spokenText, { volume: settings.soundVolume > 0 ? 1 : 0 });
+  }, [latestFeedbackPly, voiceOn, phase, spokenText, settings.soundVolume]);
+  useEffect(() => {
+    if (!voiceOn) stopSpeaking();
+  }, [voiceOn]);
+  useEffect(() => stopSpeaking, []);
   const barScore = shownFeedback?.evalAfter ?? shownEval?.lines[0]?.score ?? liveEval?.lines[0]?.score ?? null;
   const terminal = new Chess(shownFen);
   const terminalWinner = terminal.isCheckmate() ? (terminal.turn() === "w" ? "b" : "w") : terminal.isDraw() || terminal.isStalemate() ? "draw" : null;
@@ -1083,6 +1102,11 @@ export function PlayView() {
                   <span style={{ color: moveClassColor(latestFeedback.classification) }}>{MOVE_CLASS_PHRASE[latestFeedback.classification]}</span>
                 </p>
                 <p className="mt-1 text-sm">{latestFeedback.explanation.text}</p>
+                {speechSupported() ? (
+                  <Button size="sm" variant="ghost" className="mt-1" onClick={() => speak(spokenText)}>
+                    <Volume2 className="size-4" aria-hidden /> Listen again
+                  </Button>
+                ) : null}
                 {isError(latestFeedback.classification) && phase === "playing" ? (
                   <Button size="sm" variant="primary" className="mt-2" onClick={undo}>
                     <Undo2 className="size-4" aria-hidden /> Undo &amp; try again
@@ -1099,12 +1123,28 @@ export function PlayView() {
                 Best move: <span className="font-mono">{uciToSan(liveFen, liveEval.lines[0].pv[0]) ?? "–"}</span>
               </Alert>
             ) : null}
-            <Button size="sm" onClick={() => setHintStage((h) => Math.min(2, h + 1))} disabled={!myTurnLive || !liveEval || hintStage >= 2}>
+            <Button
+              size="sm"
+              onClick={() => {
+                const next = Math.min(2, hintStage + 1);
+                setHintStage(next);
+                if (!settings.coachVoice) return;
+                // The coach says the hint out loud: first which piece to look at, then the move itself.
+                const best = liveEval?.lines[0]?.pv[0];
+                const san = best ? uciToSan(liveFen, best) : null;
+                if (next === 1 && hint) speak(hint.text);
+                else if (next === 2 && san) speak(`The best move is ${sanToSpeech(san)}.`);
+              }}
+              disabled={!myTurnLive || !liveEval || hintStage >= 2}
+            >
               <Lightbulb className="size-4" aria-hidden /> {hintStage === 0 ? "Hint" : "Show the move"}
             </Button>
             <details>
               <summary className="cursor-pointer text-xs text-ink-3">Coach settings</summary>
               <Toggle label="Evaluation bar" checked={coachOpts.evalBar} onChange={(v) => setCoachOpts((o) => ({ ...o, evalBar: v }))} />
+              {speechSupported() ? (
+                <Toggle label="Coach speaks" checked={settings.coachVoice} onChange={(v) => updateSettings({ coachVoice: v })} />
+              ) : null}
               <Toggle label="Move feedback" checked={coachOpts.feedback} onChange={(v) => setCoachOpts((o) => ({ ...o, feedback: v }))} />
               <Toggle label="Threat arrows (red)" checked={coachOpts.threats} onChange={(v) => setCoachOpts((o) => ({ ...o, threats: v }))} />
               <Toggle label="Best-move arrow (green)" checked={coachOpts.bestArrow} onChange={(v) => setCoachOpts((o) => ({ ...o, bestArrow: v }))} />

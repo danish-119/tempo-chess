@@ -25,6 +25,8 @@ export const SettingsSchema = z.object({
   colorBlindSafe: z.boolean().default(false),
   /** Spoken (screen-reader) announcement of every move shown on the board. */
   announceMoves: z.boolean().default(true),
+  /** The coach reads its feedback and hints aloud (browser speech synthesis). */
+  coachVoice: z.boolean().default(true),
   chessComUsername: z.string().max(25).default(""),
 });
 
