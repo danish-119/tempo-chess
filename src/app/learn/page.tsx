@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, Crosshair, Library } from "lucide-react";
+import { ArrowUpRight, BookOpen, Crosshair, Library } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata: Metadata = {
   title: "Learn",
@@ -16,18 +17,21 @@ const SECTIONS = [
 
 export default function LearnPage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-4">
-      <h1 className="mb-4 font-serif text-2xl font-semibold tracking-tight">Learn</h1>
-      <ul className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-3">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
+      <PageHeader eyebrow="Learn" size="lg" title="Get better at chess." subtitle="Watch the main lines, learn the patterns behind the tactics, and look up any term. All free, all in your browser." />
+      <ul className="grid gap-4 sm:grid-cols-3">
         {SECTIONS.map(({ href, title, text, Icon }) => (
           <li key={href}>
             <Link
               href={href}
-              className="flex h-full flex-col items-center gap-3 rounded-2xl border border-border bg-surface p-8 text-center shadow-sm transition-colors hover:border-accent hover:bg-accent-soft"
+              className="group relative flex h-full flex-col gap-3 overflow-hidden rounded-2xl border border-border bg-surface p-7 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent hover:shadow-[var(--shadow)]"
             >
-              <Icon className="size-12 text-accent" aria-hidden />
-              <span className="font-serif text-xl font-semibold">{title}</span>
-              <span className="text-sm text-ink-2">{text}</span>
+              <span className="flex size-12 items-center justify-center rounded-full bg-accent-soft">
+                <Icon className="size-6 text-accent" aria-hidden />
+              </span>
+              <span className="display mt-3 text-2xl">{title}</span>
+              <span className="text-sm leading-relaxed text-ink-2">{text}</span>
+              <ArrowUpRight className="absolute top-5 right-5 size-5 text-ink-3 transition-colors group-hover:text-accent" aria-hidden />
             </Link>
           </li>
         ))}

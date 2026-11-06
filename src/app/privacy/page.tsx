@@ -8,11 +8,14 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <article className="mx-auto max-w-3xl space-y-5 px-4 py-8 leading-relaxed text-ink-2">
-      <h1 className="font-serif text-3xl font-semibold tracking-tight text-ink">Privacy policy</h1>
-      <p className="text-sm text-ink-3">
-        Template reflecting how this software works. Operators of a deployment should review it, add their contact details and adjust for their hosting.
-      </p>
+    <article className="mx-auto max-w-3xl space-y-5 px-4 py-10 leading-relaxed text-ink-2 sm:py-14 [&_a]:text-accent [&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.9em] [&_h2]:!mt-10 [&_h2]:border-t [&_h2]:border-border [&_h2]:pt-6 [&_li]:marker:text-accent [&_strong]:text-ink">
+      <header className="space-y-4 pb-2">
+        <p className="eyebrow">Legal</p>
+        <h1 className="display text-5xl text-ink sm:text-6xl">Privacy policy</h1>
+        <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-ink-2">
+          Short version: no accounts, no cookies, no analytics. Your games, reviews and progress stay in your browser.
+        </p>
+      </header>
 
       <h2 className="font-serif text-xl font-semibold text-ink">Summary</h2>
       <p>Tempo has no user accounts of its own, sets no cookies, and contains no analytics, advertising or tracking code.</p>

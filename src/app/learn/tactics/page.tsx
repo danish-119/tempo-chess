@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Suspense } from "react";
-import { ArrowLeft } from "lucide-react";
 import { Spinner } from "@/components/ui/primitives";
 import { TacticsView } from "./TacticsView";
 
@@ -14,12 +13,7 @@ export const metadata: Metadata = {
 export default function TacticsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-4">
-      <div className="mb-3 flex items-center gap-2">
-        <Link href="/learn" aria-label="Back to Learn" className="grid size-9 place-items-center rounded-md text-ink-2 hover:bg-surface-2">
-          <ArrowLeft className="size-5" aria-hidden />
-        </Link>
-        <h1 className="font-serif text-2xl font-semibold tracking-tight">Tactics</h1>
-      </div>
+      <PageHeader eyebrow="Learn" title="Tactics" subtitle="Forks, pins, skewers and classic mating patterns, with real examples." back={{ href: "/learn", label: "Back to Learn" }} />
       <Suspense fallback={<Spinner label="Loading…" />}>
         <TacticsView />
       </Suspense>

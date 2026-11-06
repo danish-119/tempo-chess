@@ -7,10 +7,13 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <article className="mx-auto max-w-3xl space-y-5 px-4 py-8 leading-relaxed text-ink-2">
-      <h1 className="font-serif text-3xl font-semibold tracking-tight text-ink">Terms of use</h1>
-      <p className="text-sm text-ink-3">Template — operators of a deployment should review and adapt it.</p>
-      <ol className="list-decimal space-y-3 pl-5">
+    <article className="mx-auto max-w-3xl space-y-5 px-4 py-10 leading-relaxed text-ink-2 sm:py-14 [&_li]:marker:text-accent [&_strong]:text-ink">
+      <header className="space-y-4 pb-2">
+        <p className="eyebrow">Legal</p>
+        <h1 className="display text-5xl text-ink sm:text-6xl">Terms of use</h1>
+        <p className="text-sm text-ink-3">Plain terms for a free, open-source tool.</p>
+      </header>
+      <ol className="list-decimal space-y-4 pl-6 text-[17px]">
         <li>Tempo is free software provided under the GNU GPL v3.0 or later, <strong>without any warranty</strong>, to the extent permitted by law.</li>
         <li>Engine evaluations, move classifications, accuracy scores and explanations are automated approximations and may be wrong.</li>
         <li>

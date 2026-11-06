@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/PageHeader";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Brain, CalendarCheck, Download, Flame, Trash2, TrendingUp, Upload } from "lucide-react";
@@ -103,7 +104,7 @@ export function ProgressView() {
 
   return (
     <div className="space-y-4">
-      <h1 className="font-serif text-2xl font-semibold tracking-tight">Progress</h1>
+      <PageHeader eyebrow="You" title="Progress" subtitle="Your streak, rating estimate, daily puzzle and mistake bank. Stored only on this device." />
 
       {empty ? (
         <Alert tone="info" title="Your journey starts today">

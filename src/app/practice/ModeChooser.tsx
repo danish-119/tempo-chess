@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/PageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Brain, CalendarCheck, ChevronRight, Flame } from "lucide-react";
@@ -88,7 +89,7 @@ export function ModeChooser<Id extends string>({
 }) {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <h1 className="font-serif text-2xl font-semibold tracking-tight">Practice</h1>
+      <PageHeader eyebrow="Train" title="Practice" subtitle="Pick a mode. Everything is free and your progress stays on this device." />
       <TodayStrip />
       {groups.map((group) => (
         <section key={group.title} aria-labelledby={`grp-${group.title}`} className="space-y-2">

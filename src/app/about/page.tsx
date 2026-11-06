@@ -31,10 +31,11 @@ const FEATURES: { title: string; href: string; text: string }[] = [
 
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-10 px-4 py-8 leading-relaxed">
+    <div className="mx-auto max-w-3xl space-y-12 px-4 py-10 leading-relaxed sm:py-14">
       <header>
-        <h1 className="font-serif text-3xl font-semibold tracking-tight">About Tempo</h1>
-        <p className="mt-2 text-ink-2">
+        <p className="eyebrow mb-4">About</p>
+        <h1 className="display text-5xl sm:text-6xl">About Tempo</h1>
+        <p className="mt-5 text-lg text-ink-2">
           Tempo is a free, open-source place to play, review, practise and learn chess. The Stockfish engine runs inside your browser, so there is no
           server, no account and no subscription — every feature is free and unlimited, and your games never leave your device.
         </p>

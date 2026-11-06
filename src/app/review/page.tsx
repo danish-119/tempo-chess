@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/ui/PageHeader";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ImportTabs } from "./ImportTabs";
@@ -12,10 +13,12 @@ export const metadata: Metadata = {
 export default function ReviewPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-2">
-        <h1 className="font-serif text-3xl font-semibold tracking-tight">Review a game</h1>
-        <Link href="/analyze" className="text-sm text-ink-2 underline">Open an empty analysis board</Link>
-      </div>
+      <PageHeader
+        eyebrow="Review"
+        title="Review a game"
+        subtitle="Import from Chess.com or Lichess, or paste a PGN. Stockfish grades every move in your browser."
+        actions={<Link href="/analyze" className="pill pill-quiet !h-10">Empty analysis board</Link>}
+      />
       <Suspense>
         <ImportTabs />
       </Suspense>
