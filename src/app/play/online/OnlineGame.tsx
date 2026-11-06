@@ -10,6 +10,7 @@ import { Alert, Button, Card, SectionTitle, Spinner, Toggle, cx } from "@/compon
 import { copyText } from "@/hooks/useAnnouncer";
 import { record } from "@/hooks/useProgress";
 import { useSound } from "@/hooks/useSound";
+import { isThreefoldRepetition } from "@/lib/chess/repetition";
 import { START_FEN } from "@/lib/chess/types";
 import { type ClockState, TIME_CONTROLS, formatMs, timeLeft } from "@/lib/clock";
 import { afterLocalMove, afterRemoteMove, startOnlineClock, stopClock, timeoutVerdict } from "@/lib/online/clock";
@@ -55,9 +56,11 @@ const newGame = (color: Color, game: number, tcId: string): GameState => ({
   clock: startOnlineClock(tcOf(tcId), performance.now()),
 });
 
-function outcome(chess: Chess, mover: Color, me: Color): string | null {
+/** `moves` is the whole game in UCI: a position rebuilt from a FEN has no history, so repetition needs the list. */
+function outcome(chess: Chess, mover: Color, me: Color, moves: readonly string[]): string | null {
   if (chess.isCheckmate()) return mover === me ? "Checkmate. You win!" : "Checkmate. You lose.";
   if (chess.isStalemate()) return "Stalemate. It is a draw.";
+  if (isThreefoldRepetition(moves)) return "Draw by threefold repetition.";
   if (chess.isDraw()) return "The game is drawn.";
   return null;
 }
@@ -206,7 +209,7 @@ export function OnlineGame({ onActiveChange }: { onActiveChange?: (active: boole
               drawFrom: null,
               notice: null,
             });
-            const over = outcome(new Chess(res.fen), opposite(cur.color), cur.color);
+            const over = outcome(new Chess(res.fen), opposite(cur.color), cur.color, [...cur.moves, msg.uci]);
             if (over) finishGame(over);
             break;
           }
@@ -399,7 +402,7 @@ export function OnlineGame({ onActiveChange }: { onActiveChange?: (active: boole
     }
     sound.playSan(m.san);
     setG({ ...cur, clock, moves: [...cur.moves, uci], sans: [...cur.sans, m.san], fen: chess.fen(), last: { from: m.from, to: m.to }, drawFrom: null, notice: null });
-    const over = outcome(chess, cur.color, cur.color);
+    const over = outcome(chess, cur.color, cur.color, [...cur.moves, uci]);
     if (over) finishGame(over);
     return true;
   };

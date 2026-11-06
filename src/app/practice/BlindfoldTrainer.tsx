@@ -8,6 +8,7 @@ import { Alert, Button, Card, SectionTitle, cx, inputClass } from "@/components/
 import { useEngine } from "@/hooks/useEngine";
 import { useSound } from "@/hooks/useSound";
 import { applyUci, terminalState } from "@/lib/chess/line";
+import { isThreefoldRepetition } from "@/lib/chess/repetition";
 import { START_FEN } from "@/lib/chess/types";
 import { parseMoveInput, piecePlacementText } from "@/lib/blindfold";
 import { PLAY_LEVELS, pickHumanMove } from "@/lib/play";
@@ -55,7 +56,9 @@ export function BlindfoldTrainer() {
   const { fen, sans, last } = useMemo(() => replay(moves), [moves]);
   const turn = fen.split(" ")[1] === "w" ? "w" : "b";
   const myTurn = turn === color;
-  const end = terminalState(fen);
+  // A position rebuilt from a FEN has no history, so repetition is checked from the move list.
+  const repeated = useMemo(() => isThreefoldRepetition(moves), [moves]);
+  const end = terminalState(fen) ?? (repeated ? "draw" : null);
   const cfg = LEVELS.find((l) => l.level === level) ?? LEVELS[2];
 
   const start = () => {
