@@ -7,7 +7,12 @@ export const SITE = {
   url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tempochess.vercel.app").replace(/\/$/, ""),
   /** Public source repository (required for GPL source availability). */
   repoUrl: process.env.NEXT_PUBLIC_REPO_URL ?? "https://github.com/danish-119/tempo-chess",
-  author: { name: "Danish", url: "https://danish-developer.vercel.app/" },
+  author: { name: "Muhammad Danish", url: "https://danish-developer.vercel.app/" },
+  /** The author's public profiles (the same ones listed on the portfolio site). */
+  social: [
+    { label: "GitHub", url: "https://github.com/danish-119" },
+    { label: "LinkedIn", url: "https://www.linkedin.com/in/danish-119gb/" },
+  ],
   /** WhatsApp number in international format, digits only (used for a wa.me link). */
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP ?? "923001877119",
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "mdanish.software.dev@gmail.com",

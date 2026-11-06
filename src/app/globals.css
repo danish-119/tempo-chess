@@ -8,13 +8,13 @@
  */
 :root {
   color-scheme: light;
-  --bg: #e9e7e1;
-  --surface: #f6f4ef;
-  --surface-2: #dfdcd4;
-  --border: #cdc8bd;
+  --bg: #f3f0e9;
+  --surface: #fbf9f4;
+  --surface-2: #e7e3d9;
+  --border: #d5cfc2;
   --ink: #1d1b18;
   --ink-2: #4f4a42;
-  --ink-3: #6f695f;
+  --ink-3: #6a645a;
   --accent: #8a5a1f;
   --accent-ink: #ffffff;
   --accent-soft: #f3e6d2;
@@ -62,13 +62,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #26282c;
-    --surface: #2e3035;
-    --surface-2: #383b41;
-    --border: #474a52;
-    --ink: #eeeae2;
-    --ink-2: #c3bdb1;
-    --ink-3: #9a9488;
+    --bg: #25231f;
+    --surface: #2e2c27;
+    --surface-2: #3a3732;
+    --border: #4f4a42;
+    --ink: #f4efe4;
+    --ink-2: #cfc8b9;
+    --ink-3: #a09989;
     --accent: #d9a35b;
     --accent-ink: #1d1b18;
     --accent-soft: #3a2f20;
@@ -100,13 +100,13 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #26282c;
-  --surface: #2e3035;
-  --surface-2: #383b41;
-  --border: #474a52;
-  --ink: #eeeae2;
-  --ink-2: #c3bdb1;
-  --ink-3: #9a9488;
+  --bg: #25231f;
+  --surface: #2e2c27;
+  --surface-2: #3a3732;
+  --border: #4f4a42;
+  --ink: #f4efe4;
+  --ink-2: #cfc8b9;
+  --ink-3: #a09989;
   --accent: #d9a35b;
   --accent-ink: #1d1b18;
   --accent-soft: #3a2f20;
@@ -256,4 +256,219 @@ body {
 /* An invite link (/play#o=…) opens the online card; keep the normal Play setup hidden until it takes over. */
 html[data-join] [data-play-setup] {
   visibility: hidden;
+}
+
+/* ============================ Landing page ============================
+ * The landing page follows the site theme (light or dark) like every other page. .land-dark is the base surface and
+ * .land-paper a slightly raised one, so the sections still alternate.
+ */
+.land-dark {
+  background: var(--bg);
+  color: var(--ink);
+}
+/* .land-paper is the contrasting band: light on a dark site, dark on a light site */
+.land-paper {
+  background: var(--bg);
+  color: var(--ink);
+}
+:root[data-theme="dark"] .land-paper {
+  color-scheme: light;
+  --bg: #f3f0e9;
+  --surface: #fbf9f4;
+  --surface-2: #e7e3d9;
+  --border: #d5cfc2;
+  --ink: #1d1b18;
+  --ink-2: #4f4a42;
+  --ink-3: #6a645a;
+  --accent: #8a5a1f;
+  --accent-ink: #ffffff;
+  --accent-soft: #f3e6d2;
+  --shadow: 0 1px 2px rgba(29, 27, 24, 0.06), 0 24px 56px rgba(29, 27, 24, 0.12);
+}
+:root[data-theme="light"] .land-paper {
+  color-scheme: dark;
+  --bg: #25231f;
+  --surface: #2e2c27;
+  --surface-2: #3a3732;
+  --border: #4f4a42;
+  --ink: #f4efe4;
+  --ink-2: #cfc8b9;
+  --ink-3: #a09989;
+  --accent: #d9a35b;
+  --accent-ink: #1d1b18;
+  --accent-soft: #3a2f20;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 28px 70px rgba(0, 0, 0, 0.5);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .land-paper {
+    color-scheme: light;
+    --bg: #f3f0e9;
+    --surface: #fbf9f4;
+    --surface-2: #e7e3d9;
+    --border: #d5cfc2;
+    --ink: #1d1b18;
+    --ink-2: #4f4a42;
+    --ink-3: #6a645a;
+    --accent: #8a5a1f;
+    --accent-ink: #ffffff;
+    --accent-soft: #f3e6d2;
+    --shadow: 0 1px 2px rgba(29, 27, 24, 0.06), 0 24px 56px rgba(29, 27, 24, 0.12);
+  }
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .land-paper {
+    color-scheme: dark;
+    --bg: #25231f;
+    --surface: #2e2c27;
+    --surface-2: #3a3732;
+    --border: #4f4a42;
+    --ink: #f4efe4;
+    --ink-2: #cfc8b9;
+    --ink-3: #a09989;
+    --accent: #d9a35b;
+    --accent-ink: #1d1b18;
+    --accent-soft: #3a2f20;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 28px 70px rgba(0, 0, 0, 0.5);
+  }
+}
+/* the colour-blind palette must survive inside the landing sections too */
+:root[data-cb="on"] .land-dark,
+:root[data-cb="on"] .land-paper {
+  --c-brilliant: #56b4e9;
+  --c-book: #8c7a66;
+  --c-forced: #8a8a8a;
+  --c-only: #0072b2;
+  --c-best: #009e73;
+  --c-excellent: #5aaa8e;
+  --c-good: #7fa89c;
+  --c-inaccuracy: #b8a000;
+  --c-mistake: #e69f00;
+  --c-blunder: #d55e00;
+  --c-missed: #cc79a7;
+}
+
+.display {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 0.94;
+  text-wrap: balance;
+}
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.land-wrap {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+@media (min-width: 768px) {
+  .land-wrap {
+    padding-inline: 32px;
+  }
+}
+
+/* outlined pill buttons with a mono label, the landing page's call to action */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 52px;
+  padding-inline: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  transition: background 0.25s, color 0.25s, border-color 0.25s, transform 0.25s;
+}
+.pill:hover {
+  background: var(--ink);
+  color: var(--bg);
+}
+.pill:active {
+  transform: scale(0.98);
+}
+.pill-solid {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.pill-solid:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+.pill-quiet {
+  border-color: var(--border);
+  color: var(--ink-2);
+}
+
+/* a faint chessboard floor behind the hero, faded out towards the edges */
+.land-checker {
+  background-image: repeating-conic-gradient(rgba(255, 255, 255, 0.045) 0% 25%, transparent 0% 50%);
+  background-size: 112px 112px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 70% 40%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse 70% 60% at 70% 40%, #000 0%, transparent 72%);
+}
+
+.reveal {
+  transition:
+    opacity 0.9s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal[data-reveal="hidden"] {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+@keyframes land-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: land-marquee 48s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@keyframes land-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+@keyframes land-ring {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+  .reveal[data-reveal="hidden"] {
+    opacity: 1;
+    transform: none;
+  }
 }
