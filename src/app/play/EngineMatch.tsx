@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FlipVertical2, Pause, Play, RotateCcw, Search, SkipForward } from "lucide-react";
 import { EvalBar } from "@/components/analysis/EvalBar";
 import { Board } from "@/components/board/Board";
+import { useSettings } from "@/components/providers/SettingsProvider";
 import { CapturedPieces } from "@/components/board/CapturedPieces";
 import { Alert, Button, Card, SectionTitle, Spinner, Toggle, cx } from "@/components/ui/primitives";
 import { useEngine } from "@/hooks/useEngine";
@@ -103,6 +104,8 @@ function LevelPicker({ label, value, onChange }: { label: string; value: number;
 export function EngineMatch({ onActiveChange }: { onActiveChange?: (active: boolean) => void } = {}) {
   const router = useRouter();
   const sound = useSound();
+  const { settings, update: updateSettings } = useSettings();
+  const showEval = settings.showEvalBar;
   const engine = useEngine();
   const { load } = engine;
   const [phase, setPhase] = useState<Phase>("setup");
@@ -286,6 +289,12 @@ export function EngineMatch({ onActiveChange }: { onActiveChange?: (active: bool
           <p className="mt-1 text-xs text-ink-3">You can change this while the match is running.</p>
         </fieldset>
         <Toggle
+          label="Show evaluation bar"
+          description="The bar beside the board that shows who is better. Hide it if you would rather judge the game yourself."
+          checked={showEval}
+          onChange={(v) => updateSettings({ showEvalBar: v })}
+        />
+        <Toggle
           label="Vary the opening"
           description="Engines are deterministic, so two of the same strength would play the same game every time. This picks among their best few moves for the first five moves each, so every match is different."
           checked={variety}
@@ -338,7 +347,9 @@ export function EngineMatch({ onActiveChange }: { onActiveChange?: (active: bool
       <div className="mx-auto w-full max-w-[min(100%,calc(100dvh-10rem))]">
         {strip(topSide)}
         <div className="flex gap-2">
-          <EvalBar score={score} orientation={flipped ? "black" : "white"} terminal={over ? (over.result === "1-0" ? "w" : over.result === "0-1" ? "b" : "draw") : null} />
+          {showEval ? (
+            <EvalBar score={score} orientation={flipped ? "black" : "white"} terminal={over ? (over.result === "1-0" ? "w" : over.result === "0-1" ? "b" : "draw") : null} />
+          ) : null}
           <div className="min-w-0 flex-1">
             <Board fen={fen} orientation={flipped ? "black" : "white"} lastMove={last} interactive={false} id="tempo-engine-match" ariaLabel="Engine match board" />
           </div>
@@ -398,6 +409,8 @@ export function EngineMatch({ onActiveChange }: { onActiveChange?: (active: bool
             ))}
           </select>
         </label>
+
+        <Toggle label="Show evaluation bar" checked={showEval} onChange={(v) => updateSettings({ showEvalBar: v })} />
 
         <div>
           <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-ink-3">Moves</h3>

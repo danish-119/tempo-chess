@@ -9,6 +9,8 @@ export const SettingsSchema = z.object({
   liveDepth: z.number().int().min(8).max(30).default(20),
   liveMultiPv: z.number().int().min(1).max(5).default(3),
   showArrows: z.boolean().default(true),
+  /** The evaluation bar beside the board in Play with Coach and Watch engines. */
+  showEvalBar: z.boolean().default(true),
   showBoardBadges: z.boolean().default(true),
   showCoordinates: z.boolean().default(true),
   showLegalMoves: z.boolean().default(true),

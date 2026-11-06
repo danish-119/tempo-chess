@@ -68,7 +68,6 @@ type Mode = "normal" | "coach" | "friend";
 type GameEnd = { result: "1-0" | "0-1" | "1/2-1/2"; reason: string } | null;
 
 interface CoachOptions {
-  evalBar: boolean;
   bestArrow: boolean;
   threats: boolean;
   feedback: boolean;
@@ -193,7 +192,7 @@ export function PlayView() {
   const [color, setColor] = useState<Color>("w");
   const [tcId, setTcId] = useState("none");
   const [boardView, setBoardView] = useState<"flip" | "two" | "fixed">("flip");
-  const [coachOpts, setCoachOpts] = useState<CoachOptions>({ evalBar: true, bestArrow: false, threats: true, feedback: true });
+  const [coachOpts, setCoachOpts] = useState<CoachOptions>({ bestArrow: false, threats: true, feedback: true });
 
   // ---- game -----------------------------------------------------------------
   const [moves, setMoves] = useState<string[]>([]);
@@ -904,6 +903,12 @@ export function PlayView() {
                       </div>
                     </div>
                   </div>
+                  <Toggle
+                    label="Show evaluation bar"
+                    description="The bar beside the board that shows who is better. Hide it if you would rather judge the position yourself."
+                    checked={settings.showEvalBar}
+                    onChange={(v) => updateSettings({ showEvalBar: v })}
+                  />
                 </fieldset>
               ) : (
                 <fieldset>
@@ -1084,7 +1089,7 @@ export function PlayView() {
             <>
               {renderPlayer(topSide)}
               <div className="flex gap-2">
-                {coach && coachOpts.evalBar ? <EvalBar score={barScore} orientation={orientation} terminal={terminalWinner} /> : null}
+                {coach && settings.showEvalBar ? <EvalBar score={barScore} orientation={orientation} terminal={terminalWinner} /> : null}
                 <div className="min-w-0 flex-1">
                   <Board
                     fen={shownFen}
@@ -1212,7 +1217,7 @@ export function PlayView() {
             </Button>
             <details>
               <summary className="cursor-pointer text-xs text-ink-3">Coach settings</summary>
-              <Toggle label="Evaluation bar" checked={coachOpts.evalBar} onChange={(v) => setCoachOpts((o) => ({ ...o, evalBar: v }))} />
+              <Toggle label="Evaluation bar" checked={settings.showEvalBar} onChange={(v) => updateSettings({ showEvalBar: v })} />
               {speechSupported() ? (
                 <Toggle label="Coach speaks" checked={settings.coachVoice} onChange={(v) => updateSettings({ coachVoice: v })} />
               ) : null}

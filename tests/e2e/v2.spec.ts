@@ -109,6 +109,7 @@ test.describe("Tempo v2", () => {
     await page.getByRole("radiogroup", { name: "Black engine" }).getByRole("radio", { name: /Ali/ }).click();
     await page.getByRole("radiogroup", { name: "Pause between moves" }).getByRole("radio", { name: "Off" }).click();
     await expect(page.getByRole("switch", { name: "Vary the opening" })).toBeChecked();
+    await expect(page.getByRole("switch", { name: "Show evaluation bar" })).toBeChecked();
     await page.getByRole("button", { name: "Start match" }).click();
     // The match takes over the screen like the other games: the mode cards are gone until you go back.
     await expect(page.getByRole("radio", { name: "Play with Coach" })).toHaveCount(0);
@@ -131,10 +132,32 @@ test.describe("Tempo v2", () => {
     await expect(page.getByLabel("Pause between moves")).toHaveValue("2");
     await expect(page.getByRole("button", { name: "Review this game" })).toBeEnabled();
 
+    // The evaluation bar can be hidden (and shown again) during the match.
+    await expect(page.getByRole("meter")).toBeVisible();
+    await page.getByRole("switch", { name: "Show evaluation bar" }).click();
+    await expect(page.getByRole("meter")).toHaveCount(0);
+    await page.getByRole("switch", { name: "Show evaluation bar" }).click();
+    await expect(page.getByRole("meter")).toBeVisible();
+
     // Back leaves the match and returns to the setup, like the other games.
     await page.goBack();
     await expect(page.getByRole("button", { name: "Start match" })).toBeVisible();
     await expect(page.getByRole("radio", { name: "Play with Coach" })).toBeVisible();
+  });
+
+  test("the evaluation bar can be hidden in Play with Coach, and the choice is remembered", async ({ page }) => {
+    await page.goto("/play");
+    await page.getByRole("radio", { name: "Play with Coach" }).click();
+    const bar = page.getByRole("switch", { name: "Show evaluation bar" });
+    await expect(bar).toBeChecked();
+    await bar.click(); // hide it
+    await expect(bar).not.toBeChecked();
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page.getByRole("meter")).toHaveCount(0);
+    // The choice is a setting, so it carries over to the engine match as well.
+    await page.goto("/play");
+    await page.getByRole("radio", { name: "Watch engines" }).click();
+    await expect(page.getByRole("switch", { name: "Show evaluation bar" })).not.toBeChecked();
   });
 
   test("captured pieces and the material lead are shown next to each player", async ({ page }) => {
