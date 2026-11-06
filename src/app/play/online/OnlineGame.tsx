@@ -3,12 +3,12 @@
 import { Chess } from "chess.js";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Copy, Flag, Handshake, Link2, RotateCcw, Search, ShieldCheck, Wifi, WifiOff } from "lucide-react";
+import { Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Copy, Flag, Handshake, Link2, RotateCcw, Search, ShieldCheck, Wifi, WifiOff } from "lucide-react";
 import { Board } from "@/components/board/Board";
 import { CapturedPieces } from "@/components/board/CapturedPieces";
 import { KingIcon, TC_COLOR, TC_ICON } from "@/components/play/tiles";
 import { useSettings } from "@/components/providers/SettingsProvider";
-import { Alert, Button, Card, SectionTitle, Spinner, Toggle, cx } from "@/components/ui/primitives";
+import { Alert, Button, Card, IconButton, SectionTitle, Spinner, Toggle, cx } from "@/components/ui/primitives";
 import { copyText } from "@/hooks/useAnnouncer";
 import { record } from "@/hooks/useProgress";
 import { useSound } from "@/hooks/useSound";
@@ -127,6 +127,8 @@ export function OnlineGame({ onActiveChange }: { onActiveChange?: (active: boole
   const [g, setGState] = useState<GameState | null>(null);
   const [latency, setLatency] = useState<number | null>(null);
   const [stalled, setStalled] = useState(false);
+  /** The move number being looked at while the game goes on; null follows the live position. */
+  const [view, setView] = useState<number | null>(null);
   const [now, setNow] = useState(0);
   /** null until the browser has checked; avoids flashing a wrong state from the prerendered page. */
   const [supported, setSupported] = useState<boolean | null>(null);
@@ -390,6 +392,27 @@ export function OnlineGame({ onActiveChange }: { onActiveChange?: (active: boole
 
   const myTurn = !!g && !g.over && new Chess(g.fen).turn() === g.color;
 
+  // Look back through the moves with the arrow keys while the opponent thinks.
+  const gameNo = g?.game;
+  useEffect(() => setView(null), [gameNo]);
+  useEffect(() => {
+    if (stage !== "playing") return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const total = gRef.current?.moves.length ?? 0;
+      const clampTo = (n: number) => (n >= total ? null : Math.max(0, n));
+      if (e.key === "ArrowLeft") setView((v) => clampTo((v ?? total) - 1));
+      else if (e.key === "ArrowRight") setView((v) => clampTo((v ?? total) + 1));
+      else if (e.key === "Home" || e.key === "ArrowUp") setView(clampTo(0));
+      else if (e.key === "End" || e.key === "ArrowDown") setView(null);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [stage]);
+
   const onMove = (uci: string): boolean => {
     const cur = gRef.current;
     if (!cur || cur.over) return false;
@@ -500,25 +523,67 @@ export function OnlineGame({ onActiveChange }: { onActiveChange?: (active: boole
 
   // ---- playing -----------------------------------------------------------------
   if (stage === "playing" && g) {
-    const lines: string[] = [];
-    for (let i = 0; i < g.sans.length; i += 2) lines.push(`${i / 2 + 1}. ${g.sans[i]}${g.sans[i + 1] ? ` ${g.sans[i + 1]}` : ""}`);
     const tc = tcOf(g.tcId);
+    const total = g.moves.length;
+    const shownPly = view === null || view >= total ? total : Math.max(0, view);
+    const viewing = shownPly !== total;
+    const goTo = (n: number) => {
+      if (n >= total) setView(null);
+      else {
+        setView(Math.max(0, n));
+        if (n === shownPly + 1) sound.playSan(g.sans[n - 1]);
+      }
+    };
+    let shownFen = g.fen;
+    let shownLast = g.last;
+    if (viewing) {
+      const chess = new Chess(START_FEN);
+      let from: string | null = null;
+      let to: string | null = null;
+      g.moves.slice(0, shownPly).forEach((uci) => {
+        const m = applyUci(chess, uci);
+        if (m) [from, to] = [m.from, m.to];
+      });
+      shownFen = chess.fen();
+      shownLast = from && to ? { from, to } : null;
+    }
     return (
       <>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
           <div className="mx-auto w-full max-w-[min(100%,calc(100dvh-14rem))]">
             {strip(opposite(g.color), "Your friend")}
             <Board
-              fen={g.fen}
+              fen={shownFen}
               orientation={g.color === "w" ? "white" : "black"}
-              lastMove={g.last}
-              interactive={myTurn}
+              lastMove={shownLast}
+              interactive={myTurn && !viewing}
               movableColor={g.color}
               onMove={onMove}
               id="tempo-online"
               ariaLabel="Online game board"
             />
             {strip(g.color, "You")}
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-1" role="group" aria-label="View moves">
+              <div className="flex items-center">
+                <IconButton label="First move" onClick={() => goTo(0)} disabled={shownPly === 0}>
+                  <ChevronFirst className="size-5" aria-hidden />
+                </IconButton>
+                <IconButton label="Previous move (←)" onClick={() => goTo(shownPly - 1)} disabled={shownPly === 0}>
+                  <ChevronLeft className="size-5" aria-hidden />
+                </IconButton>
+                <IconButton label="Next move (→)" onClick={() => goTo(shownPly + 1)} disabled={!viewing}>
+                  <ChevronRight className="size-5" aria-hidden />
+                </IconButton>
+                <IconButton label="Latest move" onClick={() => goTo(total)} disabled={!viewing}>
+                  <ChevronLast className="size-5" aria-hidden />
+                </IconButton>
+              </div>
+              {viewing ? (
+                <Button size="sm" variant="primary" onClick={() => goTo(total)}>
+                  Back to the game{myTurn ? " · your move" : ""}
+                </Button>
+              ) : null}
+            </div>
           </div>
           <Card className="h-fit space-y-4 p-4">
             <div>
@@ -534,8 +599,29 @@ export function OnlineGame({ onActiveChange }: { onActiveChange?: (active: boole
               {stalled ? "Connection unstable: waiting for your opponent…" : latency === null ? "Connected" : latency > 400 ? `Slow connection · ${latency} ms` : `Connected · ${latency} ms`}
             </p>
             {g.notice ? <Alert tone="info">{g.notice}</Alert> : null}
-            <ol className="max-h-48 overflow-y-auto font-mono text-sm" aria-label="Moves">
-              {lines.length === 0 ? <li className="text-ink-3">No moves yet.</li> : lines.map((l) => <li key={l}>{l}</li>)}
+            <ol className="max-h-48 space-y-0.5 overflow-y-auto font-mono text-sm" aria-label="Moves">
+              {g.sans.length === 0 ? (
+                <li className="text-ink-3">No moves yet.</li>
+              ) : (
+                Array.from({ length: Math.ceil(g.sans.length / 2) }, (_, row) => (
+                  <li key={row} className="flex items-center gap-1">
+                    <span className="w-7 text-ink-3">{row + 1}.</span>
+                    {[row * 2, row * 2 + 1].map((i) =>
+                      g.sans[i] ? (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => goTo(i + 1)}
+                          aria-current={shownPly === i + 1 ? "step" : undefined}
+                          className={cx("rounded px-1.5 py-0.5 hover:bg-surface-2", shownPly === i + 1 && "bg-accent-soft font-semibold text-ink")}
+                        >
+                          {g.sans[i]}
+                        </button>
+                      ) : null,
+                    )}
+                  </li>
+                ))
+              )}
             </ol>
             {!g.over ? (
               <div className="flex flex-wrap gap-2">
