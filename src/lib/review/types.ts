@@ -43,7 +43,25 @@ export type MotifTag =
   | "promotion"
   | "material-loss"
   | "missed-material"
-  | "trade-down";
+  | "trade-down"
+  | "removed-defender"
+  | "overlooked-threat"
+  | "stalemate"
+  | "drawn-away"
+  | "smothered-mate"
+  | "sacrifice"
+  | "free-piece"
+  | "exchange"
+  | "check"
+  | "castling"
+  | "development"
+  | "centre"
+  | "escape"
+  | "threat"
+  | "passed-pawn"
+  | "king-activity"
+  | "open-file"
+  | "defence";
 
 export interface MoveExplanation {
   /** One-sentence summary, safe to display as plain text. */
@@ -104,7 +122,7 @@ export interface ReviewSettings {
 }
 
 /** Bump when classification/explanation rules change. */
-export const REVIEW_VERSION = 2;
+export const REVIEW_VERSION = 3;
 
 export interface GameReview {
   gameId: string;

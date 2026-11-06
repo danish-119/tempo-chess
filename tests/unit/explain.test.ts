@@ -110,7 +110,7 @@ describe("explainMove", () => {
       }),
     );
     expect(exp.verified).toBe(false);
-    expect(exp.text).toMatch(/engine prefers e4/);
+    expect(exp.text).toMatch(/e4/);
   });
 
   it("ignores illegal engine lines instead of inventing moves", () => {
@@ -118,6 +118,53 @@ describe("explainMove", () => {
     const exp = explainMove(
       make(fen, "e2e4", { classification: "best", bestLine: ["e2e4"], replyLine: ["a1a8"] }),
     );
-    expect(exp.text).toMatch(/top choice/);
+    expect(exp.text.length).toBeGreaterThan(5);
+    expect(exp.text).not.toMatch(/Ra8|a1a8/);
+  });
+  it("describes a free capture from the board", () => {
+    const fen = "4k3/8/8/3q4/8/8/8/3QK3 w - - 0 1";
+    const exp = explainMove(make(fen, "d1d5", { classification: "best", bestLine: ["d1d5"] }));
+    expect(exp.motifs).toContain("free-piece");
+    expect(exp.text).toMatch(/queen on d5/);
+  });
+
+  it("describes castling", () => {
+    const fen = "r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1";
+    const exp = explainMove(make(fen, "e1g1", { classification: "best", bestLine: ["e1g1"] }));
+    expect(exp.motifs).toEqual(["castling"]);
+    expect(exp.text).toMatch(/[Cc]astl/);
+  });
+
+  it("describes a check", () => {
+    const fen = "4k3/8/8/8/8/8/8/R3K3 w - - 0 1";
+    const exp = explainMove(make(fen, "a1a8", { classification: "good", bestLine: ["a1a8"] }));
+    expect(exp.motifs).toContain("check");
+  });
+
+  it("recognises a smothered mate", () => {
+    const fen = "6rk/6pp/8/6N1/8/8/8/K7 w - - 0 1";
+    const exp = explainMove(make(fen, "g5f7", { classification: "best", deliversMate: true }));
+    expect(exp.motifs).toEqual(["smothered-mate"]);
+    expect(exp.text).toMatch(/[Ss]mothered/);
+  });
+
+  it("calls out a stalemate thrown away from a winning position", () => {
+    const fen = "k7/8/1K6/8/8/8/8/2Q5 w - - 0 1";
+    const exp = explainMove(
+      make(fen, "c1c7", { classification: "blunder", evalBefore: { kind: "cp", value: 900 }, evalAfter: { kind: "cp", value: 0 } }),
+    );
+    expect(exp.motifs).toContain("stalemate");
+    expect(exp.motifs).toContain("drawn-away");
+    expect(exp.text).toMatch(/[Ss]talemate/);
+  });
+
+  it("keeps wording stable for the same move and varied across moves", () => {
+    const start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    const texts = ["e2e4", "d2d4", "g1f3", "b1c3", "g2g3", "a2a3", "h2h3", "b2b3"].map((u) =>
+      explainMove(make(start, u, { classification: "best", bestLine: [u] })).text,
+    );
+    const again = explainMove(make(start, "e2e4", { classification: "best", bestLine: ["e2e4"] })).text;
+    expect(again).toBe(texts[0]);
+    expect(new Set(texts).size).toBeGreaterThanOrEqual(5);
   });
 });

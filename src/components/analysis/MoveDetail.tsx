@@ -32,7 +32,7 @@ export function MoveDetail({
       <p className="text-sm leading-relaxed text-ink">{move.explanation.text}</p>
       {move.explanation.verified && move.explanation.motifs.length > 0 ? (
         <p className="flex items-center gap-1 text-[11px] text-ink-3">
-          <ShieldCheck className="size-3.5 text-good" aria-hidden /> Checked against the engine line.
+          <ShieldCheck className="size-3.5 text-good" aria-hidden /> Checked on the board and against the engine line.
         </p>
       ) : null}
       <dl className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-ink-2 sm:grid-cols-4">
