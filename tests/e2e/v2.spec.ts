@@ -37,13 +37,13 @@ test.describe("Tempo v2", () => {
     // White plays e4 by clicking squares.
     await host.locator('[data-square="e2"]').first().click();
     await host.locator('[data-square="e4"]').first().click();
-    await expect(guest.getByRole("list", { name: "Moves" })).toContainText("1. e4");
+    await expect(guest.getByRole("list", { name: "Moves" })).toContainText(/1\.\s*e4/);
     await expect(guest.getByText("Your move")).toBeVisible();
 
     // Black answers e5.
     await guest.locator('[data-square="e7"]').first().click();
     await guest.locator('[data-square="e5"]').first().click();
-    await expect(host.getByRole("list", { name: "Moves" })).toContainText("1. e4 e5");
+    await expect(host.getByRole("list", { name: "Moves" })).toContainText(/1\.\s*e4\s*e5/);
 
     // Resign ends the game for both.
     await guest.getByRole("button", { name: "Resign" }).click();
@@ -190,6 +190,7 @@ test.describe("Tempo v2", () => {
     await page.getByRole("button", { name: "Settings" }).click();
     await page.getByRole("switch", { name: "Colour-blind-safe move colours" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-cb", "on");
+    await page.getByRole("tab", { name: "Sound & coach" }).click();
     await expect(page.getByRole("switch", { name: "Coach speaks its feedback aloud" })).toBeVisible();
     await expect(page.getByRole("switch", { name: "Announce moves to screen readers" })).toBeVisible();
   });
