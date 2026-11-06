@@ -1,3 +1,7 @@
+import { Chess } from "chess.js";
+import type { StockfishEngine } from "@/lib/engine/engine";
+import type { Score } from "@/lib/engine/score";
+
 /**
  * Play-vs-Stockfish opponents, ordered from weakest to strongest.
  *
@@ -54,4 +58,49 @@ export function pickHumanMove(candidates: string[], legal: string[], humanize: {
   const pool = candidates.filter((m) => legal.includes(m)).slice(0, humanize.topK);
   if (pool.length === 0) return legal[Math.floor(random() * legal.length)];
   return pool[Math.floor(random() * pool.length)];
+}
+
+export interface BotMoveOptions {
+  /**
+   * Opening variety: choose at random among the engine's best `varietyTopK` moves that are no more than
+   * `varietyMaxLossCp` centipawns worse than the best. Without it two identical engines play the same
+   * game every time. Ignored for the beginner levels, which already pick humanly.
+   */
+  varietyTopK?: number;
+  varietyMaxLossCp?: number;
+  random?: () => number;
+}
+
+/**
+ * Ask the engine for a move at the strength of `cfg`: full-strength levels play its best move, limited
+ * levels use its strength options, and the beginner levels pick "humanly" among its top lines. Returns
+ * null if no legal move could be chosen. `score` is the engine's evaluation (White's point of view).
+ */
+export async function chooseBotMove(
+  engine: Pick<StockfishEngine, "analyze">,
+  fen: string,
+  cfg: PlayLevel,
+  opts: BotMoveOptions = {},
+): Promise<{ uci: string; score: Score | null } | null> {
+  const variety = !cfg.humanize && (opts.varietyTopK ?? 1) > 1;
+  const multiPv = variety ? opts.varietyTopK : cfg.humanize?.topK;
+  const snap = await engine.analyze({ fen, movetimeMs: cfg.movetimeMs, depth: cfg.depth, strength: cfg.strength, multiPv });
+  const legal = new Chess(fen).moves({ verbose: true }).map((m) => `${m.from}${m.to}${m.promotion ?? ""}`);
+  const best = snap.bestmove ?? snap.lines[0]?.pv[0] ?? null;
+  let uci: string | null;
+  if (cfg.humanize) {
+    uci = pickHumanMove(snap.lines.map((l) => l.pv[0]).filter(Boolean), legal, cfg.humanize);
+  } else if (variety && snap.lines[0]?.score.kind === "cp") {
+    const sign = fen.split(" ")[1] === "b" ? -1 : 1; // scores are from White's point of view
+    const bestCp = snap.lines[0].score.value * sign;
+    const maxLoss = opts.varietyMaxLossCp ?? 40;
+    const pool = snap.lines
+      .filter((l) => l.score.kind === "cp" && bestCp - l.score.value * sign <= maxLoss && legal.includes(l.pv[0]))
+      .map((l) => l.pv[0]);
+    uci = pool.length > 0 ? pool[Math.floor((opts.random ?? Math.random)() * pool.length)] : best;
+  } else {
+    uci = best;
+  }
+  if (!uci || !legal.includes(uci)) return null;
+  return { uci, score: snap.lines[0]?.score ?? null };
 }

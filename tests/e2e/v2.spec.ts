@@ -94,6 +94,49 @@ test.describe("Tempo v2", () => {
     await expect(page.getByText(/not a legal move/)).toBeVisible();
   });
 
+  test("watch two engines play each other, with a choice of strengths and pause", async ({ page }) => {
+    await page.goto("/play");
+    await page.getByRole("radio", { name: "Watch engines" }).click();
+    // Only one card is selected at a time.
+    await expect(page.getByRole("radio", { name: "Watch engines" })).toBeChecked();
+    await expect(page.getByRole("radio", { name: "Play with Coach" })).not.toBeChecked();
+    await expect(page.getByRole("radio", { name: "Play a friend online" })).not.toBeChecked();
+    // Both sides default to full strength, and the pause between moves defaults to 5 seconds.
+    await expect(page.getByRole("radiogroup", { name: "White engine" }).getByRole("radio", { checked: true })).toContainText("Max");
+    await expect(page.getByRole("radiogroup", { name: "Black engine" }).getByRole("radio", { checked: true })).toContainText("Max");
+    await expect(page.getByRole("radiogroup", { name: "Pause between moves" }).getByRole("radio", { name: "5 s" })).toBeChecked();
+    // Pick a weaker Black and no pause so the test is quick.
+    await page.getByRole("radiogroup", { name: "Black engine" }).getByRole("radio", { name: /Ali/ }).click();
+    await page.getByRole("radiogroup", { name: "Pause between moves" }).getByRole("radio", { name: "Off" }).click();
+    await expect(page.getByRole("switch", { name: "Vary the opening" })).toBeChecked();
+    await page.getByRole("button", { name: "Start match" }).click();
+    // The match takes over the screen like the other games: the mode cards are gone until you go back.
+    await expect(page.getByRole("radio", { name: "Play with Coach" })).toHaveCount(0);
+
+    const moves = page.getByRole("list", { name: "Moves" });
+    await expect(moves).toContainText(/1\. \S+ \S+/, { timeout: 90_000 });
+
+    // Pause stops the game; Resume continues it.
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    await expect(page.getByText("Paused")).toBeVisible();
+    await page.waitForTimeout(800);
+    const frozen = await moves.innerText();
+    await page.waitForTimeout(4000);
+    expect(await moves.innerText()).toBe(frozen);
+    await page.getByRole("button", { name: "Resume" }).click();
+    await expect.poll(async () => (await moves.innerText()).length, { timeout: 60_000 }).toBeGreaterThan(frozen.length);
+
+    // The pause can be changed live, and the game can be handed over for review.
+    await page.getByLabel("Pause between moves").selectOption("2");
+    await expect(page.getByLabel("Pause between moves")).toHaveValue("2");
+    await expect(page.getByRole("button", { name: "Review this game" })).toBeEnabled();
+
+    // Back leaves the match and returns to the setup, like the other games.
+    await page.goBack();
+    await expect(page.getByRole("button", { name: "Start match" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Play with Coach" })).toBeVisible();
+  });
+
   test("colour-blind palette and spoken-coach settings", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Settings" }).click();

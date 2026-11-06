@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { setQuery } from "@/lib/url";
+import { EngineMatch } from "./EngineMatch";
 import { OnlineGame } from "./online/OnlineGame";
 import { coachSpeechText, sanToSpeech, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess, validateFen } from "chess.js";
 import {
   Check,
+  Cpu,
   Columns2,
   Volume2,
   Flame,
@@ -170,13 +172,19 @@ export function PlayView() {
   const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<Mode>("coach");
   /** "Play a friend online" is a fourth card in the mode row; it brings its own setup and game. */
-  const [onlineMode, setOnlineMode] = useState(false);
+  const [extra, setExtra] = useState<"online" | "watch" | null>(null);
+  const onlineMode = extra === "online";
+  const watchMode = extra === "watch";
+  const setOnlineMode = (on: boolean) => setExtra(on ? "online" : null);
   const [onlineActive, setOnlineActive] = useState(false);
+  const [watchActive, setWatchActive] = useState(false);
+  /** A running online game or engine match replaces the mode cards, as the other games do. */
+  const fullScreen = (onlineMode && onlineActive) || (watchMode && watchActive);
   useEffect(() => {
     // An invite link (#o=…) or /play?online=1 opens the online card straight away.
     if (window.location.hash.startsWith("#o=") || new URLSearchParams(window.location.search).get("online") === "1") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setOnlineMode(true);
+      setExtra("online");
     }
   }, []);
   const [level, setLevel] = useState(4);
@@ -721,8 +729,8 @@ export function PlayView() {
   // ---- render: setup -------------------------------------------------------------
   if (phase === "setup") {
     return (
-      <div data-play-setup className={cx("mx-auto space-y-4", onlineMode && onlineActive ? "max-w-none" : "max-w-3xl")}>
-        <div className={cx("space-y-4", onlineMode && onlineActive && "hidden")}>
+      <div data-play-setup className={cx("mx-auto space-y-4", fullScreen ? "max-w-none" : "max-w-3xl")}>
+        <div className={cx("space-y-4", fullScreen && "hidden")}>
         {saved && !saved.end ? (
           <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
@@ -748,24 +756,24 @@ export function PlayView() {
             </div>
           </Card>
         ) : null}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <div className="contents" role="radiogroup" aria-label="Game mode">
           {MODES.map(({ id, title, Icon }) => (
             <button
               key={id}
               type="button"
               role="radio"
-              aria-checked={!onlineMode && mode === id}
+              aria-checked={extra === null && mode === id}
               onClick={() => {
                 setOnlineMode(false);
                 setMode(id);
               }}
               className={cx(
                 "card relative flex flex-col items-start gap-2 p-4 text-left transition-colors",
-                !onlineMode && mode === id ? "!border-accent bg-accent-soft ring-2 ring-accent" : "opacity-80 hover:bg-surface-2 hover:opacity-100",
+                extra === null && mode === id ? "!border-accent bg-accent-soft ring-2 ring-accent" : "opacity-80 hover:bg-surface-2 hover:opacity-100",
               )}
             >
-              {!onlineMode && mode === id ? (
+              {extra === null && mode === id ? (
                 <span className="absolute top-3 right-3 flex size-6 items-center justify-center rounded-full bg-accent text-accent-ink" aria-hidden>
                   <Check className="size-4" />
                 </span>
@@ -792,12 +800,32 @@ export function PlayView() {
               <Link2 className="size-6 text-accent" aria-hidden />
               <span className="font-semibold">Play a friend online</span>
             </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={watchMode}
+              onClick={() => setExtra("watch")}
+              className={cx(
+                "card relative flex flex-col items-start gap-2 p-4 text-left transition-colors",
+                watchMode ? "!border-accent bg-accent-soft ring-2 ring-accent" : "opacity-80 hover:bg-surface-2 hover:opacity-100",
+              )}
+            >
+              {watchMode ? (
+                <span className="absolute top-3 right-3 flex size-6 items-center justify-center rounded-full bg-accent text-accent-ink" aria-hidden>
+                  <Check className="size-4" />
+                </span>
+              ) : null}
+              <Cpu className="size-6 text-accent" aria-hidden />
+              <span className="font-semibold">Watch engines</span>
+            </button>
           </div>
         </div>
         </div>
 
         {onlineMode ? (
           <OnlineGame onActiveChange={setOnlineActive} />
+        ) : watchMode ? (
+          <EngineMatch onActiveChange={setWatchActive} />
         ) : (
         <Card className="space-y-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
