@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SettingsProvider } from "@/components/providers/SettingsProvider";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { KeyboardHelp } from "@/components/layout/KeyboardHelp";
+import { PwaRegister } from "@/components/layout/PwaRegister";
 import { SITE } from "@/lib/site";
 import "./globals.css";
 
@@ -21,7 +22,9 @@ export const metadata: Metadata = {
     url: SITE.url,
   },
   twitter: { card: "summary", title: SITE.name, description: SITE.description },
-  icons: { icon: "/icon.svg" },
+  icons: { icon: "/icon.svg", apple: "/icons/icon-192.png" },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: SITE.name, statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -54,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteFooter />
           <SettingsDialog />
           <KeyboardHelp />
+          <PwaRegister />
         </SettingsProvider>
       </body>
     </html>

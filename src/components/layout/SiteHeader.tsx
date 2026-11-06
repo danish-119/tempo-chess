@@ -8,6 +8,7 @@ import { NAV } from "@/lib/site";
 import { useSettings } from "@/components/providers/SettingsProvider";
 import { cx } from "@/components/ui/primitives";
 import { Logo } from "./Logo";
+import { InstallButton } from "./PwaRegister";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -49,6 +50,7 @@ export function SiteHeader() {
           </ul>
         </nav>
         <div className="ml-auto flex items-center gap-1">
+          <InstallButton />
           <button
             type="button"
             aria-label="Settings"

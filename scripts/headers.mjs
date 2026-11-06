@@ -34,3 +34,6 @@ export const SECURITY_HEADERS = {
 };
 
 export const ENGINE_CACHE = "public, max-age=31536000, immutable";
+
+// The service worker and web manifest must always be revalidated so updates reach users.
+export const SW_CACHE = "no-cache, max-age=0, must-revalidate";

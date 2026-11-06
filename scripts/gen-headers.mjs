@@ -2,7 +2,7 @@
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ENGINE_CACHE, SECURITY_HEADERS } from "./headers.mjs";
+import { ENGINE_CACHE, SECURITY_HEADERS, SW_CACHE } from "./headers.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const entries = Object.entries(SECURITY_HEADERS);
@@ -25,6 +25,8 @@ const vercel = {
       ],
     },
     { source: "/engine/(.*)\\.js", headers: [{ key: "Cache-Control", value: ENGINE_CACHE }] },
+    { source: "/sw.js", headers: [{ key: "Cache-Control", value: SW_CACHE }] },
+    { source: "/manifest.webmanifest", headers: [{ key: "Cache-Control", value: SW_CACHE }] },
   ],
 };
 writeFileSync(join(root, "vercel.json"), `${JSON.stringify(vercel, null, 2)}\n`);
@@ -36,6 +38,12 @@ const netlify = [
   "",
   "/engine/*",
   `  Cache-Control: ${ENGINE_CACHE}`,
+  "",
+  "/sw.js",
+  `  Cache-Control: ${SW_CACHE}`,
+  "",
+  "/manifest.webmanifest",
+  `  Cache-Control: ${SW_CACHE}`,
   "",
 ].join("\n");
 writeFileSync(join(root, "public", "_headers"), netlify);
