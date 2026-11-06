@@ -54,6 +54,7 @@ import { PlayerBar } from "./PlayerBar";
 import { CoachCard } from "./CoachCard";
 import { ReviewDetails, ReviewScore } from "./ReviewSummary";
 import { MistakeBankButton } from "./MistakeBankButton";
+import { GifExportButton } from "./GifExportButton";
 
 type LoadState = { status: "loading" } | { status: "ready"; game: ImportedGame } | { status: "error"; message: string };
 
@@ -652,6 +653,7 @@ function Workspace({ initialGame, initialPly, initialPanel }: { initialGame: Imp
                 <EvalGraph review={review} currentPly={ply} onSelect={goto} />
                 <ReviewScore review={review} metadata={game.metadata} />
                 <MistakeBankButton game={game} review={review} />
+                <GifExportButton game={game} review={review} orientation={orientation} />
                 <details className="no-print rounded-lg border border-border px-3 py-2">
                   <summary className="cursor-pointer text-sm font-medium">More stats</summary>
                   <ReviewDetails review={review} onJump={goto} />
