@@ -1066,11 +1066,11 @@ export function PlayView() {
   return (
     <div className="grid gap-3 lg:h-[calc(100dvh-8.5rem)] lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
       <div className="flex min-h-0 flex-col items-center">
-        <div className={cx("w-full", twoBoards ? "max-w-[min(100%,calc(2*(100dvh-17rem)))]" : "max-w-[min(100%,calc(100dvh-16rem))]")}>
+        <div className={cx("w-full", twoBoards ? "max-w-[min(100%,calc(2*(100dvh-14.5rem)))]" : "max-w-[min(100%,calc(100dvh-16rem))]")}>
           {twoBoards ? (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               {(["w", "b"] as const).map((side) => (
-                <div key={side} className={cx("rounded-lg p-1", phase === "playing" && live.turn() === side && "ring-2 ring-accent")}>
+                <div key={side} className={cx("rounded-lg p-0.5", phase === "playing" && live.turn() === side && "ring-2 ring-accent")}>
                   {renderPlayer(side)}
                   <Board
                     id={`play-board-${side}`}
