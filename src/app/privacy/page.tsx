@@ -22,6 +22,8 @@ export default function PrivacyPage() {
         <li>Games you import and their reviews — in your browser&apos;s IndexedDB.</li>
         <li>Settings, including an optional Chess.com username — in your browser&apos;s localStorage.</li>
         <li>An unfinished Play game, Puzzle Rush best scores, and (if you connect Lichess) your Lichess access token — in localStorage.</li>
+        <li>Your progress — streak, puzzle-rating estimate, daily puzzle results and mistake bank — in your browser&apos;s IndexedDB. You can export it as a file from the Progress page.</li>
+        <li>The offline copy of the site (pages, engine, puzzles) saved by the service worker so Tempo works without a connection.</li>
         <li>All engine analysis — computed by Stockfish running inside your browser.</li>
       </ul>
       <p>You can delete all of it at any time from Settings → Data, or by clearing this site&apos;s data in your browser.</p>
@@ -47,6 +49,16 @@ export default function PrivacyPage() {
           <strong className="text-ink">Connect Lichess (optional).</strong> The opening explorer needs a Lichess account. If you choose to connect, you log in
           on lichess.org itself; Tempo never sees your password. Lichess returns an access token with no permissions beyond identifying you, which your browser
           stores and sends with explorer requests (the current position) to <code>explorer.lichess.org</code>. Disconnect in Settings revokes the token.
+        </li>
+        <li>
+          <strong className="text-ink">Playing a friend online (optional).</strong> Moves go directly between the two browsers (WebRTC); there is no Tempo
+          game server. The invite link and reply code that you exchange contain your connection details, so only share them with the person you want to play.
+          To let players on different networks find each other, the browsers ask public STUN servers (Google and Cloudflare) for their public IP address, as
+          any video call does; you can turn this off to play only on the same Wi-Fi. Your opponent can see your IP address through the connection itself.
+        </li>
+        <li>
+          <strong className="text-ink">Spoken coach.</strong> The coach is read aloud with your browser&apos;s built-in speech synthesis. Depending on your
+          browser and operating system, some voices run online; Tempo itself sends nothing.
         </li>
         <li>
           <strong className="text-ink">Hosting.</strong> Loading the site sends standard request data (IP address, user agent, requested URL) to the hosting

@@ -27,6 +27,13 @@ Tempo lets you play bots, a coach or a friend, review your games move by move, p
 - **Share**: game links packed into the URL fragment (no upload), links to any puzzle, endgame, opening or tactic, and PNG board images.
 - **Endgame tablebase** (≤ 7 pieces) and **opening explorer** (Masters + Lichess games; optional "Connect Lichess" login, done in the browser with OAuth PKCE). Retry any mistake from a review.
 - **Exports**: original PGN, annotated PGN (`[%eval]`, NAGs, comments, best-line variations), FEN, printable report.
+- **Play a friend online**: no account or server. Create an invite link, your friend opens it and sends back a short reply code, then moves travel directly between the two browsers (WebRTC) with a live ping readout. Resign, draw offers and rematch included.
+- **Installable and offline**: Tempo is a PWA. Install it on your phone or desktop and it works with no connection, including the engine and puzzles.
+- **Progress**: streak, puzzle-rating estimate, a daily puzzle, an activity calendar and a **mistake bank** that brings your own review mistakes back at spaced intervals. Stored in IndexedDB with JSON export/import.
+- **Training modes**: **Blindfold** (play a bot with the board hidden, typing moves).
+- **Share as a GIF**: export a reviewed game as an animated GIF with the board, evaluation bar and move grades, encoded in the browser.
+- **Spoken coach** (browser speech synthesis, no AI, no upload), varied rule-based explanations covering captures, checks, castling, threats, stalemates and more.
+- **Accessibility**: spoken move announcements for screen readers, a colour-blind-safe move palette, a keyboard shortcut overlay (`?`).
 - **Appearance**: 8 board themes, 10 piece sets, light/dark mode, sounds (Lichess SFX); settings open in a modal.
 - Reviews saved locally in the browser (IndexedDB) so reopening a game is instant; keyboard navigation; one-screen desktop layout and mobile layout.
 
