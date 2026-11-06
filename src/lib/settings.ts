@@ -21,6 +21,10 @@ export const SettingsSchema = z.object({
   sound: z.boolean().default(true),
   soundVolume: z.number().min(0).max(1).default(0.6),
   showGlossaryHints: z.boolean().default(true),
+  /** Colour-blind-safe move-quality palette (Okabe-Ito). */
+  colorBlindSafe: z.boolean().default(false),
+  /** Spoken (screen-reader) announcement of every move shown on the board. */
+  announceMoves: z.boolean().default(true),
   chessComUsername: z.string().max(25).default(""),
 });
 

@@ -24,7 +24,10 @@ const GROUPS: { title: string; keys: [string[], string][] }[] = [
   },
   {
     title: "Anywhere",
-    keys: [[["?"], "Show this list"]],
+    keys: [
+      [["?"], "Show this list"],
+      [["Tab"], "Move between controls (board squares are buttons too)"],
+    ],
   },
 ];
 

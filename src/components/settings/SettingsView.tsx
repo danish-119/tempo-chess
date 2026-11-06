@@ -86,6 +86,8 @@ export function SettingsView() {
         <Toggle label="Board coordinates" checked={settings.showCoordinates} onChange={(v) => update({ showCoordinates: v })} />
         <Toggle label="Show legal moves" checked={settings.showLegalMoves} onChange={(v) => update({ showLegalMoves: v })} />
         <Toggle label="Move-quality badges on the board" checked={settings.showBoardBadges} onChange={(v) => update({ showBoardBadges: v })} />
+        <Toggle label="Colour-blind-safe move colours" checked={settings.colorBlindSafe} onChange={(v) => update({ colorBlindSafe: v })} />
+        <Toggle label="Announce moves to screen readers" checked={settings.announceMoves} onChange={(v) => update({ announceMoves: v })} />
         <Toggle label="Engine arrows" checked={settings.showArrows} onChange={(v) => update({ showArrows: v })} />
         <Toggle label="Piece animations" checked={settings.animations} onChange={(v) => update({ animations: v })} />
         <Toggle label="Sounds" checked={settings.sound} onChange={(v) => { update({ sound: v }); if (v) playSound("move", settings.soundVolume); }} />

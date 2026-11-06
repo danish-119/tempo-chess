@@ -21,6 +21,12 @@ function applyTheme(theme: Settings["theme"]) {
   else root.setAttribute("data-theme", theme);
 }
 
+function applyColorBlind(on: boolean) {
+  const root = document.documentElement;
+  if (on) root.setAttribute("data-cb", "on");
+  else root.removeAttribute("data-cb");
+}
+
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [ready, setReady] = useState(false);
@@ -35,6 +41,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setSettings(loaded);
     setReady(true);
     applyTheme(loaded.theme);
+    applyColorBlind(loaded.colorBlindSafe);
   }, []);
 
   const update = useCallback((patch: Partial<Settings>) => {
@@ -42,6 +49,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       const next = { ...prev, ...patch };
       saveSettings(next);
       if (patch.theme) applyTheme(next.theme);
+      if (patch.colorBlindSafe !== undefined) applyColorBlind(next.colorBlindSafe);
       return next;
     });
   }, []);
@@ -49,6 +57,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const reset = useCallback(() => {
     saveSettings(DEFAULT_SETTINGS);
     applyTheme(DEFAULT_SETTINGS.theme);
+    applyColorBlind(DEFAULT_SETTINGS.colorBlindSafe);
     setSettings(DEFAULT_SETTINGS);
   }, []);
 

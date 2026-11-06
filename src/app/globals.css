@@ -236,3 +236,19 @@ body {
     text-decoration: none;
   }
 }
+
+/* Colour-blind-safe move-quality palette (Okabe-Ito). Every badge also has its
+   own icon and text label, so colour is never the only signal. */
+:root[data-cb="on"] {
+  --c-brilliant: #56b4e9;
+  --c-book: #8c7a66;
+  --c-forced: #8a8a8a;
+  --c-only: #0072b2;
+  --c-best: #009e73;
+  --c-excellent: #5aaa8e;
+  --c-good: #7fa89c;
+  --c-inaccuracy: #b8a000;
+  --c-mistake: #e69f00;
+  --c-blunder: #d55e00;
+  --c-missed: #cc79a7;
+}

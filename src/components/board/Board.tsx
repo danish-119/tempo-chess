@@ -9,6 +9,7 @@ import { boardTheme } from "@/lib/appearance";
 import { usePieceRenderers } from "./pieces";
 import { useSettings } from "@/components/providers/SettingsProvider";
 import { PromotionDialog } from "./PromotionDialog";
+import { describeMove } from "@/lib/a11y/describe";
 
 export interface BoardArrow {
   from: string;
@@ -178,6 +179,11 @@ export function Board({
     [arrows, settings.showArrows],
   );
 
+  const spoken = useMemo(
+    () => (settings.announceMoves ? describeMove(fen, lastMove, badge?.classification) : null),
+    [settings.announceMoves, fen, lastMove, badge?.classification],
+  );
+
   const theme = boardTheme(settings.boardTheme);
   const pieces = usePieceRenderers(settings.pieceSet);
 
@@ -220,6 +226,9 @@ export function Board({
           boardStyle: { borderRadius: "6px", overflow: "hidden", boxShadow: "var(--shadow)" },
         }}
       />
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {spoken}
+      </p>
       {pendingPromotion ? (
         <PromotionDialog
           color={pendingPromotion.color}
