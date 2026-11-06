@@ -37,7 +37,7 @@ export const viewport: Viewport = {
 };
 
 // Applies the saved theme before first paint to avoid a light/dark flash.
-const THEME_SCRIPT = `try{var s=JSON.parse(localStorage.getItem("tempo:settings:v1")||"{}");if(s.theme==="light"||s.theme==="dark")document.documentElement.setAttribute("data-theme",s.theme);if(s.colorBlindSafe)document.documentElement.setAttribute("data-cb","on")}catch(e){}`;
+const THEME_SCRIPT = `try{var s=JSON.parse(localStorage.getItem("tempo:settings:v1")||"{}");if(s.theme==="light"||s.theme==="dark")document.documentElement.setAttribute("data-theme",s.theme);if(s.colorBlindSafe)document.documentElement.setAttribute("data-cb","on")}catch(e){}try{if(location.pathname==="/play"&&location.hash.indexOf("#o=")===0)document.documentElement.setAttribute("data-join","1")}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

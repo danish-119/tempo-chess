@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { setQuery } from "@/lib/url";
+import { OnlineGame } from "./online/OnlineGame";
 import { coachSpeechText, sanToSpeech, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -28,6 +29,7 @@ import {
   GraduationCap,
   Handshake,
   Lightbulb,
+  Link2,
   RotateCcw,
   Search,
   Swords,
@@ -167,6 +169,16 @@ export function PlayView() {
   // ---- setup ----------------------------------------------------------------
   const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<Mode>("coach");
+  /** "Play a friend online" is a fourth card in the mode row; it brings its own setup and game. */
+  const [onlineMode, setOnlineMode] = useState(false);
+  const [onlineActive, setOnlineActive] = useState(false);
+  useEffect(() => {
+    // An invite link (#o=…) or /play?online=1 opens the online card straight away.
+    if (window.location.hash.startsWith("#o=") || new URLSearchParams(window.location.search).get("online") === "1") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOnlineMode(true);
+    }
+  }, []);
   const [level, setLevel] = useState(4);
   const [colorChoice, setColorChoice] = useState<"w" | "b" | "random">("w");
   const [color, setColor] = useState<Color>("w");
@@ -709,7 +721,8 @@ export function PlayView() {
   // ---- render: setup -------------------------------------------------------------
   if (phase === "setup") {
     return (
-      <div className="mx-auto max-w-3xl space-y-4">
+      <div data-play-setup className={cx("mx-auto space-y-4", onlineMode && onlineActive ? "max-w-none" : "max-w-3xl")}>
+        <div className={cx("space-y-4", onlineMode && onlineActive && "hidden")}>
         {saved && !saved.end ? (
           <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
@@ -735,20 +748,24 @@ export function PlayView() {
             </div>
           </Card>
         ) : null}
-        <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Game mode">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="contents" role="radiogroup" aria-label="Game mode">
           {MODES.map(({ id, title, Icon }) => (
             <button
               key={id}
               type="button"
               role="radio"
-              aria-checked={mode === id}
-              onClick={() => setMode(id)}
+              aria-checked={!onlineMode && mode === id}
+              onClick={() => {
+                setOnlineMode(false);
+                setMode(id);
+              }}
               className={cx(
                 "card relative flex flex-col items-start gap-2 p-4 text-left transition-colors",
-                mode === id ? "!border-accent bg-accent-soft ring-2 ring-accent" : "opacity-80 hover:bg-surface-2 hover:opacity-100",
+                !onlineMode && mode === id ? "!border-accent bg-accent-soft ring-2 ring-accent" : "opacity-80 hover:bg-surface-2 hover:opacity-100",
               )}
             >
-              {mode === id ? (
+              {!onlineMode && mode === id ? (
                 <span className="absolute top-3 right-3 flex size-6 items-center justify-center rounded-full bg-accent text-accent-ink" aria-hidden>
                   <Check className="size-4" />
                 </span>
@@ -757,8 +774,31 @@ export function PlayView() {
               <span className="font-semibold">{title}</span>
             </button>
           ))}
+            <button
+              type="button"
+              role="radio"
+              aria-checked={onlineMode}
+              onClick={() => setOnlineMode(true)}
+              className={cx(
+                "card relative flex flex-col items-start gap-2 p-4 text-left transition-colors",
+                onlineMode ? "!border-accent bg-accent-soft ring-2 ring-accent" : "opacity-80 hover:bg-surface-2 hover:opacity-100",
+              )}
+            >
+              {onlineMode ? (
+                <span className="absolute top-3 right-3 flex size-6 items-center justify-center rounded-full bg-accent text-accent-ink" aria-hidden>
+                  <Check className="size-4" />
+                </span>
+              ) : null}
+              <Link2 className="size-6 text-accent" aria-hidden />
+              <span className="font-semibold">Play a friend online</span>
+            </button>
+          </div>
+        </div>
         </div>
 
+        {onlineMode ? (
+          <OnlineGame onActiveChange={setOnlineActive} />
+        ) : (
         <Card className="space-y-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
             <span className="text-ink-2">{startFen !== START_FEN ? "Starting from a custom position." : "Starting from the initial position."}</span>
@@ -919,6 +959,7 @@ export function PlayView() {
             Start
           </Button>
         </Card>
+        )}
       </div>
     );
   }

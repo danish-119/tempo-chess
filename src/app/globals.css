@@ -252,3 +252,8 @@ body {
   --c-blunder: #d55e00;
   --c-missed: #cc79a7;
 }
+
+/* An invite link (/play#o=…) opens the online card; keep the normal Play setup hidden until it takes over. */
+html[data-join] [data-play-setup] {
+  visibility: hidden;
+}
