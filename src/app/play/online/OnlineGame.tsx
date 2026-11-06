@@ -4,6 +4,7 @@ import { Chess } from "chess.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Copy, Flag, Handshake, Link2, RotateCcw, ShieldCheck, Wifi, WifiOff } from "lucide-react";
 import { Board } from "@/components/board/Board";
+import { CapturedPieces } from "@/components/board/CapturedPieces";
 import { KingIcon, TC_COLOR, TC_ICON } from "@/components/play/tiles";
 import { useSettings } from "@/components/providers/SettingsProvider";
 import { Alert, Button, Card, SectionTitle, Spinner, Toggle, cx } from "@/components/ui/primitives";
@@ -438,6 +439,7 @@ export function OnlineGame({ onActiveChange }: { onActiveChange?: (active: boole
           <span className="inline-block size-3.5 shrink-0 rounded-sm border border-border" style={{ background: side === "w" ? "var(--eval-white)" : "var(--eval-black)" }} aria-hidden />
           <span className="truncate text-sm font-semibold">{name}</span>
           {toMove ? <span className="rounded bg-accent-soft px-1.5 text-[11px] font-medium text-accent">to move</span> : null}
+          {g ? <CapturedPieces fen={g.fen} side={side} /> : null}
         </span>
         {left !== null ? (
           <span

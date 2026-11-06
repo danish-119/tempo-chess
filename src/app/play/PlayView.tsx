@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { setQuery } from "@/lib/url";
+import { CapturedPieces } from "@/components/board/CapturedPieces";
 import { EngineMatch } from "./EngineMatch";
 import { OnlineGame } from "./online/OnlineGame";
 import { coachSpeechText, sanToSpeech, speak, speechSupported, stopSpeaking } from "@/lib/speech";
@@ -1039,6 +1040,7 @@ export function PlayView() {
               {isOpponent && thinking ? <span className="ml-2 text-xs font-normal text-ink-3">thinking…</span> : null}
             </span>
             <span className="block text-xs text-ink-3 tabular">{sub}</span>
+            <CapturedPieces fen={shownFen} side={side} baseFen={startFen} />
           </span>
         </span>
         {renderClock(side)}

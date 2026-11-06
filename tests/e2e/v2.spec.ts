@@ -137,6 +137,26 @@ test.describe("Tempo v2", () => {
     await expect(page.getByRole("radio", { name: "Play with Coach" })).toBeVisible();
   });
 
+  test("captured pieces and the material lead are shown next to each player", async ({ page }) => {
+    await page.goto("/play");
+    await page.getByRole("radio", { name: /Play in Person/ }).click();
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page.getByRole("img", { name: "White has captured nothing yet." })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Black has captured nothing yet." })).toBeVisible();
+
+    // 1. e4 d5 2. exd5: White wins a pawn and leads by one point.
+    for (const sq of ["e2", "e4", "d7", "d5", "e4", "d5"]) await page.locator(`[data-square="${sq}"]`).click();
+    await expect(page.getByRole("img", { name: "Captured by White: 1 pawn. White is ahead by 1 point." })).toBeVisible();
+    await expect(page.getByText("+1", { exact: true })).toBeVisible();
+
+    // 2... Qxd5: material is level again and each side has taken one pawn, so no "+" is shown.
+    await page.locator('[data-square="d8"]').click();
+    await page.locator('[data-square="d5"]').click();
+    await expect(page.getByRole("img", { name: "Captured by Black: 1 pawn." })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Captured by White: 1 pawn." })).toBeVisible();
+    await expect(page.getByText("+1", { exact: true })).toHaveCount(0);
+  });
+
   test("colour-blind palette and spoken-coach settings", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Settings" }).click();

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FlipVertical2, Pause, Play, RotateCcw, Search, SkipForward } from "lucide-react";
 import { EvalBar } from "@/components/analysis/EvalBar";
 import { Board } from "@/components/board/Board";
+import { CapturedPieces } from "@/components/board/CapturedPieces";
 import { Alert, Button, Card, SectionTitle, Spinner, Toggle, cx } from "@/components/ui/primitives";
 import { useEngine } from "@/hooks/useEngine";
 import { useSound } from "@/hooks/useSound";
@@ -314,6 +315,7 @@ export function EngineMatch({ onActiveChange }: { onActiveChange?: (active: bool
           <span className="truncate text-sm font-semibold">{nameOf(l)}</span>
           {thinking ? <span className="rounded bg-accent-soft px-1.5 text-[11px] font-medium text-accent">to move</span> : null}
         </span>
+        <CapturedPieces fen={fen} side={side} />
       </div>
     );
   };
