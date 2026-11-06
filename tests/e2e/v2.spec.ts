@@ -50,6 +50,11 @@ test.describe("Tempo v2", () => {
     await expect(host.getByText("Your opponent resigned. You win!").first()).toBeVisible();
     await expect(guest.getByText("You resigned.").first()).toBeVisible();
 
+    // At the end either player can review the game: it is saved and opened in a new tab.
+    const [review] = await Promise.all([hostCtx.waitForEvent("page"), host.getByRole("button", { name: "Review this game" }).click()]);
+    await review.waitForURL(/\/analyze\?game=/);
+    await expect(review.getByText("Your friend").first()).toBeVisible();
+
     await hostCtx.close();
     await guestCtx.close();
   });

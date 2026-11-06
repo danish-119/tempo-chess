@@ -1,8 +1,9 @@
 "use client";
 
 import { Chess } from "chess.js";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Copy, Flag, Handshake, Link2, RotateCcw, ShieldCheck, Wifi, WifiOff } from "lucide-react";
+import { Check, Copy, Flag, Handshake, Link2, RotateCcw, Search, ShieldCheck, Wifi, WifiOff } from "lucide-react";
 import { Board } from "@/components/board/Board";
 import { CapturedPieces } from "@/components/board/CapturedPieces";
 import { KingIcon, TC_COLOR, TC_ICON } from "@/components/play/tiles";
@@ -11,6 +12,8 @@ import { Alert, Button, Card, SectionTitle, Spinner, Toggle, cx } from "@/compon
 import { copyText } from "@/hooks/useAnnouncer";
 import { record } from "@/hooks/useProgress";
 import { useSound } from "@/hooks/useSound";
+import { applyUci } from "@/lib/chess/line";
+import { parseSingleGame } from "@/lib/chess/pgn";
 import { isThreefoldRepetition } from "@/lib/chess/repetition";
 import { START_FEN } from "@/lib/chess/types";
 import { type ClockState, TIME_CONTROLS, formatMs, timeLeft } from "@/lib/clock";
@@ -19,6 +22,7 @@ import { type IceMode, Peer } from "@/lib/online/peer";
 import { type Message, applyRemoteMove, parseMessage } from "@/lib/online/protocol";
 import { extractCode } from "@/lib/online/signal";
 import { dateKey, recordActivity } from "@/lib/progress";
+import { StorageError, saveGame } from "@/lib/storage/db";
 
 type Color = "w" | "b";
 type Role = "host" | "guest";
@@ -56,6 +60,13 @@ const newGame = (color: Color, game: number, tcId: string): GameState => ({
   tcId,
   clock: startOnlineClock(tcOf(tcId), performance.now()),
 });
+
+/** PGN result for the finished game, from the end-of-game message and the colour I played. */
+function resultFor(over: string, me: Color): "1-0" | "0-1" | "1/2-1/2" {
+  if (/You win!/.test(over)) return me === "w" ? "1-0" : "0-1";
+  if (/You lose\.|You resigned\./.test(over)) return me === "w" ? "0-1" : "1-0";
+  return "1/2-1/2";
+}
 
 /** `moves` is the whole game in UCI: a position rebuilt from a FEN has no history, so repetition needs the list. */
 function outcome(chess: Chess, mover: Color, me: Color, moves: readonly string[]): string | null {
@@ -99,6 +110,7 @@ function Steps({ current }: { current: 0 | 1 | 2 }) {
 
 /** Peer-to-peer game with a friend: an invite link, a reply code, then moves go directly between browsers. */
 export function OnlineGame({ onActiveChange }: { onActiveChange?: (active: boolean) => void } = {}) {
+  const router = useRouter();
   const sound = useSound();
   const { settings } = useSettings();
   const [stage, setStage] = useState<Stage>("menu");
@@ -428,6 +440,34 @@ export function OnlineGame({ onActiveChange }: { onActiveChange?: (active: boole
     );
   }
 
+  /** Save the finished game and open it in the review screen (in a new tab, as the Play screen does). */
+  const reviewGame = async () => {
+    const cur = gRef.current;
+    if (!cur || !cur.over) return;
+    // Open the tab inside the click so popup blockers allow it.
+    const tab = window.open("", "_blank");
+    try {
+      const chess = new Chess(START_FEN);
+      for (const uci of cur.moves) applyUci(chess, uci);
+      const tc = tcOf(cur.tcId);
+      chess.setHeader("Event", "Tempo: online game");
+      chess.setHeader("White", cur.color === "w" ? "You" : "Your friend");
+      chess.setHeader("Black", cur.color === "b" ? "You" : "Your friend");
+      chess.setHeader("Date", new Date().toISOString().slice(0, 10).replace(/-/g, "."));
+      if (tc.baseMs) chess.setHeader("TimeControl", `${tc.baseMs / 1000}+${tc.incrementMs / 1000}`);
+      chess.setHeader("Result", resultFor(cur.over, cur.color));
+      chess.setHeader("Termination", cur.over);
+      const game = parseSingleGame(chess.pgn());
+      await saveGame(game, { perspective: cur.color });
+      const url = `/analyze?game=${encodeURIComponent(game.id)}`;
+      if (tab) tab.location.href = url;
+      else router.push(url);
+    } catch (err) {
+      tab?.close();
+      setG({ ...cur, notice: err instanceof StorageError ? err.message : "Could not open the game for review." });
+    }
+  };
+
   /** Name, colour and clock for one side, shown above and below the board. */
   const strip = (side: Color, name: string) => {
     const clock = g?.clock;
@@ -542,6 +582,9 @@ export function OnlineGame({ onActiveChange }: { onActiveChange?: (active: boole
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
+                <Button onClick={reviewGame} disabled={g.moves.length < 2}>
+                  <Search className="mr-1.5 size-4" aria-hidden /> Review this game
+                </Button>
                 {g.rematchFrom === "them" ? (
                   <Button
                     variant="primary"
