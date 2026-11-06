@@ -1,5 +1,6 @@
 import { type DBSchema, type IDBPDatabase, openDB } from "idb";
 import type { ImportedGame } from "@/lib/chess/types";
+import { type Progress, ProgressSchema, emptyProgress } from "@/lib/progress";
 import type { GameReview } from "@/lib/review/types";
 
 /**
@@ -28,6 +29,7 @@ interface TempoDB extends DBSchema {
   games: { key: string; value: SavedGame; indexes: { updatedAt: number } };
   reviews: { key: string; value: GameReview };
   cache: { key: string; value: CacheEntry };
+  progress: { key: string; value: { id: string; data: Progress } };
 }
 
 export type StorageErrorCode = "QUOTA" | "UNAVAILABLE" | "CORRUPT" | "UNKNOWN";
@@ -42,13 +44,14 @@ export class StorageError extends Error {
 }
 
 const DB_NAME = "tempo";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<TempoDB> | null> | null = null;
 const memory = {
   games: new Map<string, SavedGame>(),
   reviews: new Map<string, GameReview>(),
   cache: new Map<string, CacheEntry>(),
+  progress: new Map<string, { id: string; data: Progress }>(),
 };
 
 function getDb(): Promise<IDBPDatabase<TempoDB> | null> {
@@ -58,11 +61,14 @@ function getDb(): Promise<IDBPDatabase<TempoDB> | null> {
     return dbPromise;
   }
   dbPromise = openDB<TempoDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      const games = db.createObjectStore("games", { keyPath: "id" });
-      games.createIndex("updatedAt", "updatedAt");
-      db.createObjectStore("reviews", { keyPath: "gameId" });
-      db.createObjectStore("cache", { keyPath: "url" });
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
+        const games = db.createObjectStore("games", { keyPath: "id" });
+        games.createIndex("updatedAt", "updatedAt");
+        db.createObjectStore("reviews", { keyPath: "gameId" });
+        db.createObjectStore("cache", { keyPath: "url" });
+      }
+      if (oldVersion < 2) db.createObjectStore("progress", { keyPath: "id" });
     },
   }).catch(() => null);
   return dbPromise;
@@ -161,8 +167,9 @@ export async function clearAll(): Promise<void> {
   try {
     const db = await getDb();
     if (db) {
-      const tx = db.transaction(["games", "reviews", "cache"], "readwrite");
+      const tx = db.transaction(["games", "reviews", "cache", "progress"], "readwrite");
       await Promise.all([
+        tx.objectStore("progress").clear(),
         tx.objectStore("games").clear(),
         tx.objectStore("reviews").clear(),
         tx.objectStore("cache").clear(),
@@ -238,3 +245,45 @@ export async function cacheSet(url: string, data: unknown): Promise<void> {
     memory.cache.set(url, entry);
   }
 }
+
+// --- progress (streaks, rating estimate, mistake bank) ------------------------
+const PROGRESS_ID = "profile";
+const PROGRESS_EVENT = "tempo:progress";
+
+export async function getProgress(): Promise<Progress> {
+  try {
+    const db = await getDb();
+    const row = db ? await db.get("progress", PROGRESS_ID) : memory.progress.get(PROGRESS_ID);
+    if (!row) return emptyProgress();
+    const parsed = ProgressSchema.safeParse(row.data);
+    return parsed.success ? parsed.data : emptyProgress();
+  } catch {
+    return emptyProgress();
+  }
+}
+
+export async function setProgress(data: Progress): Promise<void> {
+  try {
+    const db = await getDb();
+    const row = { id: PROGRESS_ID, data };
+    if (db) await db.put("progress", row);
+    else memory.progress.set(PROGRESS_ID, row);
+  } catch (err) {
+    throw wrap(err);
+  }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(PROGRESS_EVENT));
+}
+
+/** Serialised read-modify-write, so two quick updates never overwrite each other. */
+let progressQueue: Promise<unknown> = Promise.resolve();
+export function updateProgress(fn: (p: Progress) => Progress): Promise<Progress> {
+  const run = progressQueue.then(async () => {
+    const next = fn(await getProgress());
+    await setProgress(next);
+    return next;
+  });
+  progressQueue = run.catch(() => undefined);
+  return run;
+}
+
+export const PROGRESS_CHANGED = PROGRESS_EVENT;

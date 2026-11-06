@@ -19,5 +19,6 @@ export const NAV = [
   { href: "/review", label: "Review", match: ["/review", "/analyze"] },
   { href: "/practice", label: "Practice", match: ["/practice"] },
   { href: "/learn", label: "Learn", match: ["/learn"] },
+  { href: "/progress", label: "Progress", match: ["/progress"] },
   { href: "/editor", label: "Editor", match: ["/editor"] },
 ] as const;

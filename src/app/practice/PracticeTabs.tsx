@@ -2,20 +2,28 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Crown, Flame, Grid3x3, Puzzle } from "lucide-react";
+import { ArrowLeft, Brain, Crown, Flame, Grid3x3, Puzzle } from "lucide-react";
 import { IconButton } from "@/components/ui/primitives";
 import { PracticeView } from "./PracticeView";
 import { PuzzleRush } from "./PuzzleRush";
 import { EndgameTrainer } from "./EndgameTrainer";
 import { CoordinateTrainer } from "./CoordinateTrainer";
+import { MistakeBank } from "./MistakeBank";
+import { type ModeGroup, ModeChooser } from "./ModeChooser";
 
-type Mode = "puzzles" | "rush" | "endgames" | "coordinates";
+type Mode = "puzzles" | "rush" | "endgames" | "coordinates" | "mistakes";
 
 const MODES: { id: Mode; title: string; text: string; Icon: typeof Puzzle }[] = [
   { id: "puzzles", title: "Puzzles", text: "Solve at your own pace. Pick a level and theme.", Icon: Puzzle },
   { id: "rush", title: "Puzzle Rush", text: "Beat the clock. Puzzles get harder, three mistakes and you're out.", Icon: Flame },
   { id: "endgames", title: "Endgames", text: "Win the key endgames against perfect defence.", Icon: Crown },
   { id: "coordinates", title: "Coordinates", text: "Find the square. Learn the board in 30-second rounds.", Icon: Grid3x3 },
+  { id: "mistakes", title: "Mistake bank", text: "Re-practise your own mistakes from reviewed games, spaced over time.", Icon: Brain },
+];
+
+const GROUPS: ModeGroup<Mode>[] = [
+  { title: "Tactics", blurb: "Spot the winning idea, at your own pace or against the clock.", ids: ["puzzles", "rush", "mistakes"] },
+  { title: "Board skills", blurb: "Endgames, board vision and visualisation.", ids: ["endgames", "coordinates"] },
 ];
 
 const readMode = (v: string | null): Mode | null => (MODES.some((m) => m.id === v) ? (v as Mode) : null);
@@ -56,28 +64,7 @@ export function PracticeTabs() {
     }
   };
 
-  if (!mode) {
-    return (
-      <>
-        <h1 className="mb-4 font-serif text-2xl font-semibold tracking-tight">Practice</h1>
-        <ul className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
-          {MODES.map(({ id, title, text, Icon }) => (
-            <li key={id}>
-              <button
-                type="button"
-                onClick={() => choose(id)}
-                className="flex h-full w-full flex-col items-center gap-3 rounded-2xl border border-border bg-surface p-8 text-center shadow-sm transition-colors hover:border-accent hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <Icon className="size-12 text-accent" aria-hidden />
-                <span className="font-serif text-xl font-semibold">{title}</span>
-                <span className="text-sm text-ink-2">{text}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </>
-    );
-  }
+  if (!mode) return <ModeChooser modes={MODES} groups={GROUPS} onChoose={choose} />;
 
   return (
     <>
@@ -93,8 +80,10 @@ export function PracticeTabs() {
         <EndgameTrainer initialLesson={params.get("lesson")} initialFen={params.get("fen")} />
       ) : mode === "coordinates" ? (
         <CoordinateTrainer />
+      ) : mode === "mistakes" ? (
+        <MistakeBank />
       ) : (
-        <PracticeView initialLevel={params.get("level")} initialTheme={params.get("theme")} initialId={params.get("id")} />
+        <PracticeView initialLevel={params.get("level")} initialTheme={params.get("theme")} initialId={params.get("id")} daily={params.get("daily") === "1"} />
       )}
     </>
   );

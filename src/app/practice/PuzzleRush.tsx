@@ -10,6 +10,8 @@ import { applyUci, parseUci, uciToSan } from "@/lib/chess/line";
 import { type PreparedPuzzle, type Puzzle, isCorrectMove, loadPuzzles, preparePuzzle } from "@/lib/puzzles";
 import { RUSH_MODES, RUSH_STRIKES, type RushModeId, loadBest, pickRushPuzzle, saveBest } from "@/lib/rush";
 import { setQuery } from "@/lib/url";
+import { record as recordProgress } from "@/hooks/useProgress";
+import { dateKey, recordRush } from "@/lib/progress";
 
 interface Attempt {
   puzzle: PreparedPuzzle;
@@ -71,6 +73,7 @@ export function PuzzleRush({ initialMode }: { initialMode?: string | null }) {
       setDeadline(null);
       const finalScore = finalAttempts.filter((a) => a.solved).length;
       const isRecord = saveBest(mode, finalScore);
+      recordProgress((p) => recordRush(p, dateKey(), mode, finalScore));
       setRecord(isRecord);
       if (isRecord) setBest(finalScore);
       sound.play(isRecord ? "victory" : "game-end");

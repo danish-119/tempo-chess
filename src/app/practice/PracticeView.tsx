@@ -22,6 +22,8 @@ import {
 } from "@/lib/puzzles";
 import { setQuery } from "@/lib/url";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
+import { record as recordProgress } from "@/hooks/useProgress";
+import { dateKey, recordDaily, recordPuzzle } from "@/lib/progress";
 
 type Status = "setup" | "solving" | "wrong" | "solved" | "revealed";
 
@@ -30,7 +32,7 @@ const NON_CLUE_THEMES = new Set(["opening", "middlegame", "endgame", "advantage"
 
 type LevelId = (typeof LEVELS)[number]["id"];
 
-export function PracticeView({ initialLevel, initialTheme, initialId }: { initialLevel?: string | null; initialTheme?: string | null; initialId?: string | null }) {
+export function PracticeView({ initialLevel, initialTheme, initialId, daily = false }: { initialLevel?: string | null; initialTheme?: string | null; initialId?: string | null; daily?: boolean }) {
   const sound = useSound();
   const [all, setAll] = useState<Puzzle[] | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -144,6 +146,12 @@ export function PracticeView({ initialLevel, initialTheme, initialId }: { initia
       if (firstTry) {
         setFirstTry(false);
         setSession((s) => ({ ...s, attempted: s.attempted + 1, streak: 0 }));
+        const day = dateKey();
+        const { id, rating } = current.puzzle;
+        recordProgress((p) => {
+          const next = recordPuzzle(p, day, rating, false);
+          return daily && id === initialId ? recordDaily(next, day, id, false) : next;
+        });
       }
       sound.play("incorrect");
       return false;
@@ -158,6 +166,14 @@ export function PracticeView({ initialLevel, initialTheme, initialId }: { initia
       setStatus("solved");
       stopTimer();
       if (firstTry) setSession((s) => ({ solved: s.solved + 1, attempted: s.attempted + 1, streak: s.streak + 1 }));
+      {
+        const day = dateKey();
+        const { id, rating } = current.puzzle;
+        recordProgress((p) => {
+          const next = firstTry ? recordPuzzle(p, day, rating, true) : p;
+          return daily && id === initialId ? recordDaily(next, day, id, true) : next;
+        });
+      }
       later(() => sound.play("correct"), 150);
       return true;
     }

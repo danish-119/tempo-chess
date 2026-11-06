@@ -13,6 +13,8 @@ import { applyUci } from "@/lib/chess/line";
 import { ENDGAME_LESSONS, type EndgameLesson, isWorse, lessonById, mistakeText } from "@/lib/endgames";
 import { type Outcome, fetchTablebase, outcomeOf, tablebaseApplies } from "@/lib/tablebase";
 import { setQuery } from "@/lib/url";
+import { record as recordProgress } from "@/hooks/useProgress";
+import { dateKey, recordActivity } from "@/lib/progress";
 
 /** A position from the board editor, trained like a lesson. */
 function customLesson(fen: string): EndgameLesson | null {
@@ -123,6 +125,7 @@ function Trainer({ lesson, onBack }: { lesson: EndgameLesson; onBack: () => void
   const finish = (s: "won" | "held") => {
     setStatus(s);
     sound.play("victory");
+    recordProgress((p) => recordActivity(p, dateKey()));
   };
 
   const onMove = (uci: string): boolean => {

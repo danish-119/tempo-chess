@@ -8,6 +8,8 @@ import { Button, Card, Toggle, cx } from "@/components/ui/primitives";
 import { useSound } from "@/hooks/useSound";
 import { boardTheme } from "@/lib/appearance";
 import { COORD_MODES, COORD_TIMES, type CoordMode, type CoordTime, isLightSquare, nameChoices, randomSquare } from "@/lib/coordinates";
+import { record as recordProgress } from "@/hooks/useProgress";
+import { dateKey, recordActivity } from "@/lib/progress";
 
 type Side = "white" | "black" | "random";
 
@@ -81,6 +83,7 @@ export function CoordinateTrainer() {
     setRunning(false);
     setFinished(true);
     setTarget(null);
+    if (right + wrong > 0) recordProgress((p) => recordActivity(p, dateKey()));
     sound.play("game-end");
   };
 
