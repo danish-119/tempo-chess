@@ -194,10 +194,10 @@ export function EditorView() {
         </div>
 
         <div className="space-y-3">
-          <Card className="space-y-4 p-4">
-            <fieldset className="space-y-2">
-              <legend className="text-xs font-semibold uppercase tracking-wider text-ink-3">Side to move</legend>
-              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Side to move">
+          <Card className="divide-y divide-border p-0">
+            <fieldset className="space-y-3 p-4">
+              <legend className="eyebrow float-left mb-3 w-full !text-[11px]">Side to move</legend>
+              <div className="clear-both grid grid-cols-2 gap-1 rounded-xl border border-border bg-bg p-1" role="radiogroup" aria-label="Side to move">
                 {(["w", "b"] as const).map((c) => (
                   <button
                     key={c}
@@ -206,71 +206,93 @@ export function EditorView() {
                     aria-checked={turn === c}
                     onClick={() => commit(placement, c)}
                     className={cx(
-                      "flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold",
-                      turn === c ? "border-accent bg-accent-soft ring-2 ring-accent" : "border-border hover:bg-surface-2",
+                      "flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                      turn === c ? "bg-accent text-accent-ink shadow-sm" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
                     )}
                   >
-                    <span className="size-3 rounded-sm border border-border" style={{ background: c === "w" ? "var(--eval-white)" : "var(--eval-black)" }} aria-hidden />
+                    <span className="size-3 rounded-full border border-border" style={{ background: c === "w" ? "var(--eval-white)" : "var(--eval-black)" }} aria-hidden />
                     {c === "w" ? "White" : "Black"}
                   </button>
                 ))}
               </div>
             </fieldset>
 
-            <fieldset className="space-y-2">
-              <legend className="text-xs font-semibold uppercase tracking-wider text-ink-3">Castling allowed</legend>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <fieldset className="space-y-3 p-4">
+              <legend className="eyebrow float-left mb-3 w-full !text-[11px]">Castling allowed</legend>
+              <div className="clear-both grid grid-cols-[auto_1fr_1fr] items-center gap-x-2 gap-y-2 text-sm">
+                <span />
+                <span className="text-center text-xs text-ink-3">Kingside</span>
+                <span className="text-center text-xs text-ink-3">Queenside</span>
                 {(
                   [
-                    ["K", "White kingside"],
-                    ["Q", "White queenside"],
-                    ["k", "Black kingside"],
-                    ["q", "Black queenside"],
+                    ["White", "K", "Q"],
+                    ["Black", "k", "q"],
                   ] as const
-                ).map(([k, label]) => (
-                  <label key={k} className={cx("flex items-center gap-2", !allowed[k] && "text-ink-3")}>
-                    <input
-                      type="checkbox"
-                      className="size-4 accent-[var(--accent)]"
-                      checked={castling[k] && allowed[k]}
-                      disabled={!allowed[k]}
-                      onChange={(e) => commit(placement, turn, { ...castling, [k]: e.target.checked })}
-                    />
-                    {label}
-                  </label>
+                ).map(([side, ks, qs]) => (
+                  <div key={side} className="contents">
+                    <span className="pr-2 font-medium text-ink-2">{side}</span>
+                    {([ks, qs] as const).map((k) => {
+                      const on = castling[k] && allowed[k];
+                      const label = `${side} ${k.toLowerCase() === "k" ? "kingside" : "queenside"}`;
+                      return (
+                        <label
+                          key={k}
+                          className={cx(
+                            "flex h-9 items-center justify-center rounded-lg border font-mono text-xs transition-colors",
+                            !allowed[k] ? "cursor-not-allowed border-border/60 text-ink-3/60" : on ? "cursor-pointer border-accent bg-accent-soft text-ink" : "cursor-pointer border-border text-ink-2 hover:bg-surface-2",
+                            "focus-within:ring-2 focus-within:ring-[var(--focus)]",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            aria-label={label}
+                            checked={on}
+                            disabled={!allowed[k]}
+                            onChange={(e) => commit(placement, turn, { ...castling, [k]: e.target.checked })}
+                          />
+                          {k.toLowerCase() === "k" ? "O-O" : "O-O-O"}
+                        </label>
+                      );
+                    })}
+                  </div>
                 ))}
               </div>
             </fieldset>
 
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => commit(placementFromFen(START_PLACEMENT_FEN), "w", { K: true, Q: true, k: true, q: true })}>
-                <RotateCcw className="size-4" aria-hidden /> Start position
-              </Button>
-              <Button size="sm" onClick={() => commit({})}>
-                <Trash2 className="size-4" aria-hidden /> Clear
-              </Button>
-              <Button size="sm" onClick={() => setOrientation((o) => (o === "white" ? "black" : "white"))}>
-                <ArrowUpDown className="size-4" aria-hidden /> Flip
-              </Button>
-              <Button size="sm" onClick={() => void copyLink()}>
-                <Link2 className="size-4" aria-hidden /> {linkCopied ? "Link copied" : "Copy link"}
-              </Button>
-              <Button
-                size="sm"
-                onClick={() =>
-                  void downloadBoardPng("tempo_position.png", { fen, orientation, boardThemeId: settings.boardTheme, pieceSet: settings.pieceSet }).catch(() => undefined)
-                }
-              >
-                <ImageDown className="size-4" aria-hidden /> Image
-              </Button>
+            <div className="space-y-3 p-4">
+              <p className="eyebrow !text-[11px]">Board</p>
+              <div className="grid grid-cols-3 gap-2">
+                <Button size="sm" className="col-span-2" onClick={() => commit(placementFromFen(START_PLACEMENT_FEN), "w", { K: true, Q: true, k: true, q: true })}>
+                  <RotateCcw className="size-4" aria-hidden /> Start position
+                </Button>
+                <Button size="sm" onClick={() => commit({})}>
+                  <Trash2 className="size-4" aria-hidden /> Clear
+                </Button>
+                <Button size="sm" onClick={() => setOrientation((o) => (o === "white" ? "black" : "white"))}>
+                  <ArrowUpDown className="size-4" aria-hidden /> Flip
+                </Button>
+                <Button size="sm" onClick={() => void copyLink()}>
+                  <Link2 className="size-4" aria-hidden /> {linkCopied ? "Link copied" : "Copy link"}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    void downloadBoardPng("tempo_position.png", { fen, orientation, boardThemeId: settings.boardTheme, pieceSet: settings.pieceSet }).catch(() => undefined)
+                  }
+                >
+                  <ImageDown className="size-4" aria-hidden /> Image
+                </Button>
+              </div>
             </div>
-          </Card>
 
-          <Card className="space-y-2 p-4">
-            <label className="flex flex-col gap-1 text-xs font-medium text-ink-2">
-              FEN
+            <div className="space-y-2 p-4">
+              <label className="eyebrow !text-[11px]" htmlFor="editor-fen">
+                FEN
+              </label>
               <div className="flex gap-2">
                 <input
+                  id="editor-fen"
                   className={cx(inputClass, "min-w-0 flex-1 font-mono text-xs")}
                   value={fenInput ?? fen}
                   onChange={(e) => {
@@ -291,8 +313,8 @@ export function EditorView() {
                   </Button>
                 )}
               </div>
-            </label>
-            {fenError ? <p className="text-xs text-bad">{fenError}</p> : null}
+              {fenError ? <p className="text-xs text-bad">{fenError}</p> : null}
+            </div>
           </Card>
 
           {problem ? (
