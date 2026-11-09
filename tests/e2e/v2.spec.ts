@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test.describe("Tempo v2", () => {
   test("blindfold: type a move and the bot answers with the board hidden", async ({ page }) => {
@@ -78,15 +78,10 @@ test.describe("Tempo v2", () => {
     await expect(bar).toBeChecked();
     await bar.click(); // hide it from inside the game
     await expect(page.getByRole("meter")).toHaveCount(0);
-    // The choice is a setting, so Settings shows it too. Changing it saved it, which made this visitor a guest, so
-    // Settings is now in the avatar menu (without the API, they stay a visitor with the Settings button).
-    const guest = page.getByRole("button", { name: "Account: Guest" });
-    if (await guest.isVisible().catch(() => false)) {
-      await guest.click();
-      await page.getByRole("menuitem", { name: "Settings" }).click();
-    } else {
-      await page.getByRole("button", { name: "Settings" }).first().click();
-    }
+    // The choice is a setting, so Settings shows it too. (Saving it asked this visitor how to keep it; they closed
+    // that, so they are still a visitor, and nobody was made a guest without choosing.)
+    await expect(page.getByRole("button", { name: /^Account:/ })).toHaveCount(0);
+    await page.getByRole("button", { name: "Settings" }).first().click();
     await page.getByRole("dialog").getByRole("tab", { name: /Appearance/ }).click();
     await expect(page.getByRole("dialog").getByRole("switch", { name: "Evaluation bar" })).not.toBeChecked();
   });
@@ -121,18 +116,12 @@ test.describe("Tempo v2", () => {
     await expect(page.getByRole("switch", { name: "Announce moves to screen readers" })).toBeVisible();
   });
 
-  test("progress page shows an empty state, then the streak after practice", async ({ page }) => {
+  test("a visitor has no Progress tab, and the page sends them home", async ({ page }) => {
+    await page.goto("/learn");
+    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Learn" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Progress" })).toHaveCount(0);
     await page.goto("/progress");
-    await expect(page.getByText("Keep your progress for good")).toBeVisible();
-    await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Practice" }).click();
-    await page.getByRole("button", { name: /^Blindfold/ }).click();
-    await page.getByRole("button", { name: "Start blindfold game" }).click();
-    await page.getByRole("button", { name: "Resign" }).click(); // finishing a game counts as today's activity
-    await expect(page.getByText("Game over")).toBeVisible();
-    // The finished game was a first save: progress is now kept for this guest.
-    await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Progress" }).click();
-    await expect(page.getByText("1 day", { exact: false }).first()).toBeVisible();
-    await expect(page.getByText("Active days")).toBeVisible();
+    await page.waitForURL((url) => url.pathname === "/");
   });
 
   test("keeps working offline after the first visit (installable PWA)", async ({ page, context }) => {

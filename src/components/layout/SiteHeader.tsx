@@ -23,6 +23,8 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { openSettings } = useSettings();
   const account = useAccount();
+  // Progress is for players (an account or a guest); a visitor has nothing saved to show there.
+  const nav = account.status === "user" ? NAV : NAV.filter((item) => item.href !== "/progress");
 
   const isActive = (routes: readonly string[]) => routes.some((r) => pathname === r || pathname?.startsWith(`${r}/`));
 
@@ -36,7 +38,7 @@ export function SiteHeader() {
           </Link>
           <nav aria-label="Main" className="hidden md:block">
             <ul className="flex items-center gap-0.5 rounded-full border border-border bg-surface/60 p-1">
-              {NAV.map((item) => (
+              {nav.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
@@ -76,8 +78,8 @@ export function SiteHeader() {
         aria-label="Mobile"
         className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_28px_rgba(0,0,0,0.28)] md:hidden"
       >
-        <ul className="mx-auto grid max-w-xl grid-cols-[repeat(5,minmax(0,1fr))]">
-          {NAV.map((item) => {
+        <ul className="mx-auto grid max-w-xl" style={{ gridTemplateColumns: `repeat(${nav.length}, minmax(0, 1fr))` }}>
+          {nav.map((item) => {
             const Icon = NAV_ICONS[item.href];
             const active = isActive(item.match);
             return (

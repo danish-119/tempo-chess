@@ -3,6 +3,7 @@
 import { Cpu, Monitor, Moon, Palette, ShieldCheck, Sun, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useAccount } from "@/components/providers/AccountProvider";
 import { useSettings } from "@/components/providers/SettingsProvider";
 import { Button, Field, Toggle, cx, inputClass } from "@/components/ui/primitives";
 import { detectSupport, recommendedThreads, resetEngine } from "@/lib/engine/client";
@@ -39,7 +40,11 @@ const swatchRing = "ring-offset-2 ring-offset-bg peer-checked:ring-2 peer-checke
 export function SettingsView() {
   const { settings, update, reset, closeSettings } = useSettings();
   const [support, setSupport] = useState<ReturnType<typeof detectSupport> | null>(null);
-  const [tab, setTab] = useState<TabId>("appearance");
+  const [picked, setTab] = useState<TabId>("appearance");
+  // Account & data is for players (an account or a guest); a visitor has no account yet.
+  const player = useAccount().status === "user";
+  const tabs = player ? TABS : TABS.filter((t) => t.id !== "data");
+  const tab = tabs.some((t) => t.id === picked) ? picked : "appearance";
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -53,8 +58,8 @@ export function SettingsView() {
 
   return (
     <div className="space-y-6">
-      <div role="tablist" aria-label="Settings sections" className="grid grid-cols-2 gap-1 rounded-2xl border border-border bg-surface p-1 sm:grid-cols-4">
-        {TABS.map(({ id, label, Icon }) => (
+      <div role="tablist" aria-label="Settings sections" className={cx("grid gap-1 rounded-2xl border border-border bg-surface p-1", player ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3")}>
+        {tabs.map(({ id, label, Icon }) => (
           <button
             key={id}
             type="button"

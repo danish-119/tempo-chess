@@ -1,4 +1,5 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 const SCHOLARS = `[Event "E2E"]
 [White "Alice"]
@@ -385,7 +386,7 @@ test.describe("Tempo", () => {
     await expect(page.getByRole("button", { name: "Open menu" })).toHaveCount(0);
     const bar = page.getByRole("navigation", { name: "Mobile" });
     await expect(bar).toBeVisible();
-    await expect(bar.getByRole("link")).toHaveCount(5);
+    await expect(bar.getByRole("link")).toHaveCount(4); // a visitor has no Progress tab
     await expect(bar.getByRole("link", { name: "Review" })).toHaveAttribute("aria-current", "page");
     const width = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(width).toBeLessThanOrEqual(1);

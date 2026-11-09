@@ -3,6 +3,7 @@
 import { useAccount } from "@/components/providers/AccountProvider";
 import { PageHeader } from "@/components/ui/PageHeader";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Brain, CalendarCheck, Crown, Flame, TrendingUp } from "lucide-react";
 import { Alert, Card, SectionTitle, cx } from "@/components/ui/primitives";
@@ -43,6 +44,11 @@ function Stat({ icon, label, short, value, hint }: { icon: React.ReactNode; labe
 /** Streak, rating estimate, daily puzzle and endgames mastered, from the player's account or guest session. */
 export function ProgressView() {
   const account = useAccount();
+  const router = useRouter();
+  // Progress is for players (an account or a guest). A visitor has nothing saved, so the page is not theirs to see.
+  useEffect(() => {
+    if (account.status === "visitor") router.replace("/");
+  }, [account.status, router]);
   const { progress, ready } = useProgress();
   const [today, setToday] = useState<string>("");
   const [dailyId, setDailyId] = useState<string | null>(null);
@@ -76,14 +82,14 @@ export function ProgressView() {
 
   const daily = today ? progress.daily[today] : undefined;
 
-  if (!ready || !stats) return <ProgressSkeleton />;
+  if (!ready || !stats || account.status !== "user") return <ProgressSkeleton />;
   const empty = stats.activeDays === 0;
 
   return (
     <div className="space-y-3 sm:space-y-4">
       <PageHeader eyebrow="You" title="Progress" phone={false} />
 
-      {account.status === "visitor" || (account.status === "user" && account.player.guest) ? (
+      {account.player.guest ? (
         <Alert tone="info" title="Keep your progress for good" className="max-sm:hidden">
           As a guest, your progress is saved on this browser while you come back at least once a month.{" "}
           <Link href="/account" className="font-semibold underline">Sign in with Google</Link> to keep it for good, on every device.
