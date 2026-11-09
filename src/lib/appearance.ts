@@ -10,7 +10,6 @@ export const BOARD_THEMES = [
   { id: "coral", label: "Coral", light: "#f4e1d8", dark: "#c27c66" },
 ] as const;
 
-export type BoardThemeId = (typeof BOARD_THEMES)[number]["id"];
 
 /**
  * Piece sets. "classic" is the set bundled with react-chessboard (MIT); the
@@ -30,7 +29,6 @@ export const PIECE_SETS = [
   { id: "pixel", label: "Pixel", license: "AGPL-3.0+ — therealqtpi" },
 ] as const;
 
-export type PieceSetId = (typeof PIECE_SETS)[number]["id"];
 
 export const PIECE_CODES = ["wK", "wQ", "wR", "wB", "wN", "wP", "bK", "bQ", "bR", "bB", "bN", "bP"] as const;
 

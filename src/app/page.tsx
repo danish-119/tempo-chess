@@ -2,7 +2,6 @@ import { FinalCta } from "@/components/landing/FinalCta";
 import { Hero } from "@/components/landing/Hero";
 import { Intro } from "@/components/landing/Intro";
 import { Marquee } from "@/components/landing/Marquee";
-import { PrivacyScene } from "@/components/landing/PrivacyScene";
 import { Studio } from "@/components/landing/Studio";
 
 export default function HomePage() {
@@ -14,7 +13,6 @@ export default function HomePage() {
       </div>
       <Intro />
       <Studio />
-      <PrivacyScene />
       <FinalCta />
     </>
   );

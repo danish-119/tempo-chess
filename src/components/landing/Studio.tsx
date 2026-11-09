@@ -16,7 +16,7 @@ const CHAPTERS = [
     n: "01",
     name: "Play",
     title: "Four ways to play",
-    body: "Pick a bot, bring in the coach, challenge a friend with one link, or just watch two engines go at it.",
+    body: "Pick a bot, bring in the coach, play a friend with a short code, or just watch two engines go at it.",
     bullets: ["Ten bots, from a gentle 400 to full Stockfish", "A coach that talks you through every move", "A friend anywhere, with a single link", "Or watch two engines play each other"],
     cta: { href: "/play", label: "Play now" },
   },
@@ -34,8 +34,8 @@ const CHAPTERS = [
     n: "03",
     name: "Practice",
     title: "Train what you actually get wrong.",
-    body: "Puzzles at your level, endgames against perfect defence, blindfold chess, and a bank that brings your own mistakes back.",
-    bullets: ["10,000 puzzles, endgames and blindfold chess", "A mistake bank that brings errors back", "Streaks and a daily puzzle, kept on your device"],
+    body: "Puzzles at your level, endgames against perfect defence, blindfold chess, and a daily puzzle.",
+    bullets: ["10,000 puzzles, endgames and blindfold chess", "Puzzle Rush against the clock", "Streaks and a daily puzzle, on every device"],
     cta: { href: "/practice", label: "Start training" },
   },
 ] as const;
@@ -119,7 +119,7 @@ export function Studio() {
 
   return (
     <section ref={ref} className="land-dark relative h-[400vh] lg:h-[440vh]" aria-label="What you can do with Tempo" data-scene="studio" data-chapter={chapter}>
-      <div className="sticky top-14 flex h-[calc(100svh-3.5rem)] items-start overflow-hidden pt-4 sm:pt-6 lg:items-center lg:pt-0">
+      <div className="sticky top-14 flex h-[calc(100svh-3.5rem)] max-md:h-[calc(100svh-8rem)] items-start overflow-hidden pt-4 sm:pt-6 lg:items-center lg:pt-0">
         <div className="land-wrap grid w-full items-center gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14">
           <div className="min-w-0">
             <ol className="mb-4 flex gap-5 lg:mb-8 lg:gap-8" aria-label="Chapters">

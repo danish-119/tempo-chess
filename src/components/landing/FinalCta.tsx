@@ -19,7 +19,7 @@ export function FinalCta() {
           <h2 id="cta-h" className="display text-[clamp(4rem,15vw,13rem)] !leading-[0.88]">
             Your move.
           </h2>
-          <p className="mt-8 max-w-xl text-lg leading-relaxed sm:text-xl">Free, private and in your browser right now. No account, nothing to install.</p>
+          <p className="mt-8 max-w-xl text-lg leading-relaxed sm:text-xl">Free, and in your browser right now. Nothing to install.</p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link
               href="/play"

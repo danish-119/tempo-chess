@@ -1,12 +1,10 @@
 const ITEMS = [
   "Stockfish in your browser",
-  "No account",
   "Works offline",
   "Every move graded",
   "A coach that talks",
   "Play a friend with a link",
   "Blindfold chess",
-  "Your own mistake bank",
   "Free",
 ];
 

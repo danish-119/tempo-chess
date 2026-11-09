@@ -22,11 +22,11 @@ test.describe("Landing page", () => {
     await page.goto("/");
 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Play. Review. Improve.");
-    for (const name of ["Four ways to play", "Every move graded. With a reason.", "Train what you actually get wrong.", "Your games never leave your device.", "Your move."]) {
+    for (const name of ["Four ways to play", "Every move graded. With a reason.", "Train what you actually get wrong.", "Your move."]) {
       await expect(page.locator("h2").filter({ hasText: name })).toBeAttached(); // the Studio chapters not on screen are aria-hidden, so match by element
     }
     // The hero replays a real review: a grade badge and a real sentence are on screen from the first frame.
-    await expect(page.getByText(/reviewed by Stockfish/).first()).toBeVisible();
+    await expect(page.getByLabel("Opera Game replay")).toBeVisible();
     await expect(page.locator("figure").first().getByText(/Brilliant|Best|Good|Excellent|Inaccuracy|Mistake|Blunder|Great|Book/).first()).toBeVisible();
     expect(errors).toEqual([]);
   });

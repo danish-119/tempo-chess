@@ -53,17 +53,14 @@ export function HeroBoard() {
       </div>
 
       <figcaption className="mt-5">
-        <div aria-hidden className="min-h-[5.75rem]">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="font-mono text-base font-semibold tabular text-ink">{operaLabel(shown)}</span>
-            {move ? <MoveClassBadge classification={move.cls} /> : null}
+        <div className="flex items-start gap-3">
+          <div aria-hidden className="min-h-[5.75rem] min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-mono text-base font-semibold tabular text-ink">{operaLabel(shown)}</span>
+              {move ? <MoveClassBadge classification={move.cls} /> : null}
+            </div>
+            <p className="mt-2 text-[15px] leading-relaxed text-ink-2">{move ? move.text : "Paul Morphy, White, to play."}</p>
           </div>
-          <p className="mt-2 text-[15px] leading-relaxed text-ink-2">{move ? move.text : "Paul Morphy, White, to play."}</p>
-        </div>
-        <div className="mt-3 flex items-center justify-between gap-4 border-t border-border pt-3">
-          <p className="eyebrow !text-[11px] !tracking-[0.12em]">
-            {OPERA.game.title} · {OPERA.game.where} · reviewed by {OPERA.engine}
-          </p>
           {reduced ? null : (
             <button
               type="button"
@@ -75,6 +72,7 @@ export function HeroBoard() {
             </button>
           )}
         </div>
+        <div className="mt-3 border-t border-border" aria-hidden />
         <p className="sr-only">
           A replay of the Opera Game, {OPERA.game.white} against {OPERA.game.black}, {OPERA.game.where}, reviewed by {OPERA.engine}. Morphy
           wins in 17 moves with a queen sacrifice and a back-rank mate.

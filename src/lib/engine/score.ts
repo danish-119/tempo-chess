@@ -72,7 +72,3 @@ export function evalBarFraction(score: Score | null): number {
   return Math.min(0.98, Math.max(0.02, winPercent(score) / 100));
 }
 
-export function scoresEqual(a: Score | null | undefined, b: Score | null | undefined): boolean {
-  if (!a || !b) return a === b;
-  return a.kind === b.kind && a.value === b.value;
-}

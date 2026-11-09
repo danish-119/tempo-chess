@@ -1,6 +1,6 @@
 "use client";
 
-import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { type RefObject, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 export const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
@@ -40,7 +40,6 @@ export function useReducedMotion(): boolean {
   );
 }
 
-export const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function useScrollValue<T extends HTMLElement>(compute: (el: T) => number): [RefObject<T | null>, number] {
   const ref = useRef<T>(null);

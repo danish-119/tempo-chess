@@ -1,4 +1,4 @@
-import { Download, Lock, WifiOff } from "lucide-react";
+import { Download, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { HeroBoard } from "./HeroBoard";
 
@@ -17,8 +17,8 @@ export function Hero() {
             <em className="font-medium italic text-accent">Improve.</em>
           </h1>
           <p className="mt-8 max-w-xl text-lg leading-relaxed text-ink-2 sm:text-xl [@media(max-height:760px)]:mt-5 [@media(max-height:760px)]:text-base lg:[@media(max-height:760px)]:text-base">
-            Tempo plays you, explains every move you make, and trains the mistakes you actually make. Stockfish runs inside your browser, so your games never
-            leave your device.
+            Tempo plays you, explains every move you make, and teaches you from the very first move. Stockfish runs right inside your browser, and every
+            feature is free.
           </p>
           <div className="mt-10 flex flex-wrap gap-3 [@media(max-height:760px)]:mt-6">
             <Link href="/play" className="pill pill-solid">
@@ -29,9 +29,6 @@ export function Hero() {
             </Link>
           </div>
           <ul className="mt-10 flex flex-wrap gap-x-7 gap-y-3 font-mono text-xs uppercase tracking-[0.12em] text-ink-3 [@media(max-height:700px)]:hidden lg:[@media(max-height:700px)]:hidden">
-            <li className="flex items-center gap-2">
-              <Lock className="size-4 text-accent" aria-hidden /> No account
-            </li>
             <li className="flex items-center gap-2">
               <WifiOff className="size-4 text-accent" aria-hidden /> Works offline
             </li>

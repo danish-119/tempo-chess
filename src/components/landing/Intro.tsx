@@ -13,7 +13,7 @@ export function Intro() {
         </Reveal>
         <WordReveal
           className="display max-w-5xl text-[clamp(2rem,4.6vw,3.9rem)] !leading-[1.08] !tracking-[-0.02em]"
-          text="Chess gets better when you understand your own games. Tempo plays with you, explains every move in plain words, and brings your mistakes back until they stop happening."
+          text="Chess gets better when you understand your own games. Tempo plays with you, explains every move in plain words, and gives you the practice to get better."
         />
       </div>
     </section>
