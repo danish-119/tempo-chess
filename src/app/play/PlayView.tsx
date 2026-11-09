@@ -1,50 +1,46 @@
 "use client";
 
+import { docsReady, readDoc, writeDoc } from "@/lib/account/docs";
 import Link from "next/link";
 import { setQuery } from "@/lib/url";
 import { CapturedPieces } from "@/components/board/CapturedPieces";
 import { EngineMatch } from "./EngineMatch";
-import { OnlineGame } from "./online/OnlineGame";
+import { OnlinePanel } from "./OnlinePanel";
 import { coachSpeechText, sanToSpeech, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess, validateFen } from "chess.js";
 import {
-  Check,
   Cpu,
   Columns2,
   Volume2,
-  Flame,
-  Hourglass,
-  Infinity,
   Lock,
   RefreshCw,
-  Timer,
-  Zap,
   ChevronFirst,
   ChevronLast,
   ChevronLeft,
   ChevronRight,
   ClipboardCopy,
+  Bot,
   Download,
   Flag,
   FlipVertical2,
+  Globe,
   GraduationCap,
   Handshake,
   Lightbulb,
-  Link2,
   RotateCcw,
   Search,
+  SquarePen,
   Swords,
   Undo2,
   UserRound,
   Users,
   X,
 } from "lucide-react";
-import { defaultPieces } from "react-chessboard";
 import { Board, type BoardArrow } from "@/components/board/Board";
+import { ColorPicker, KingIcon, TimeControlPicker } from "@/components/play/tiles";
 import { useSettings } from "@/components/providers/SettingsProvider";
-import { pieceUrl } from "@/lib/appearance";
 import { EvalBar } from "@/components/analysis/EvalBar";
 import { MoveClassIcon, moveClassColor } from "@/components/analysis/MoveClassBadge";
 import { Alert, Button, Card, IconButton, SectionTitle, Spinner, Toggle, cx } from "@/components/ui/primitives";
@@ -65,6 +61,7 @@ import { StorageError, saveGame } from "@/lib/storage/db";
 
 type Phase = "setup" | "playing" | "over";
 type Mode = "normal" | "coach" | "friend";
+type PlayModeParam = "online" | "bot" | "coach" | "person" | "engines";
 type GameEnd = { result: "1-0" | "0-1" | "1/2-1/2"; reason: string } | null;
 
 interface CoachOptions {
@@ -85,13 +82,7 @@ interface Ply {
 const COACH_DEPTH = 14;
 const COACH_TIME_MS = 1200;
 
-const MODES = [
-  { id: "normal", title: "Play with Bot", Icon: Swords },
-  { id: "coach", title: "Play with Coach", Icon: GraduationCap },
-  { id: "friend", title: "Play in Person", Icon: Users },
-] as const;
-
-/** An unfinished (or just finished) game, kept in this browser. */
+/** An unfinished (or just finished) game, kept in the player's account or guest session. */
 interface SavedPlay {
   mode: Mode;
   level: number;
@@ -107,33 +98,18 @@ interface SavedPlay {
   savedAt: number;
 }
 
-const PLAY_KEY = "tempo:play:v1";
-
+/** The game in progress, kept in the account or guest session so it can be resumed. */
 function loadSavedPlay(): SavedPlay | null {
-  try {
-    const raw = localStorage.getItem(PLAY_KEY);
-    if (!raw) return null;
-    const g = JSON.parse(raw) as SavedPlay;
-    return Array.isArray(g.moves) && typeof g.startFen === "string" ? g : null;
-  } catch {
-    return null;
-  }
+  const g = readDoc<SavedPlay | null>("play", null);
+  return g && Array.isArray(g.moves) && typeof g.startFen === "string" ? g : null;
 }
 
 function storeSavedPlay(g: SavedPlay): void {
-  try {
-    localStorage.setItem(PLAY_KEY, JSON.stringify(g));
-  } catch {
-    /* storage full or blocked: the game just isn't kept */
-  }
+  writeDoc("play", g);
 }
 
 function clearSavedPlay(): void {
-  try {
-    localStorage.removeItem(PLAY_KEY);
-  } catch {
-    /* ignore */
-  }
+  writeDoc("play", null);
 }
 
 /** Impure helpers kept outside the component (event-handler use only). */
@@ -144,20 +120,6 @@ const COACH_NAME = "Danish";
 const COACH_AVATAR = "/bots/coach.svg?v=1";
 
 const sideName = (c: Color) => (c === "w" ? "White" : "Black");
-
-const TC_ICON = { none: Infinity, bullet: Zap, blitz: Flame, rapid: Timer, classical: Hourglass } as const;
-const TC_COLOR = { none: "var(--ink-3)", bullet: "var(--c-blunder)", blitz: "var(--c-mistake)", rapid: "var(--c-best)", classical: "var(--c-only)" } as const;
-
-/** King image in the chosen piece set (used on the Play-as tiles). */
-function KingIcon({ color, set }: { color: Color; set: string }) {
-  const code = `${color}K`;
-  if (set === "classic") {
-    const Piece = defaultPieces[code];
-    return Piece ? <Piece /> : null;
-  }
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={pieceUrl(set, code)} alt="" className="size-full" draggable={false} />;
-}
 
 export function PlayView() {
   const router = useRouter();
@@ -171,21 +133,38 @@ export function PlayView() {
   // ---- setup ----------------------------------------------------------------
   const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<Mode>("coach");
-  /** "Play a friend online" is a fourth card in the mode row; it brings its own setup and game. */
+  /** Online play and engine matches bring their own panels instead of the game setup. */
   const [extra, setExtra] = useState<"online" | "watch" | null>(null);
   const onlineMode = extra === "online";
   const watchMode = extra === "watch";
-  const setOnlineMode = (on: boolean) => setExtra(on ? "online" : null);
-  const [onlineActive, setOnlineActive] = useState(false);
   const [watchActive, setWatchActive] = useState(false);
-  /** A running online game or engine match replaces the mode cards, as the other games do. */
-  const fullScreen = (onlineMode && onlineActive) || (watchMode && watchActive);
+  /** A running engine match replaces the mode cards, as the other games do. (Online games have their own page.) */
+  const fullScreen = watchMode && watchActive;
+  /** Switch mode and keep it in the address (/play?mode=online|bot|coach|person|engines). */
+  const pickMode = (m: PlayModeParam) => {
+    setExtra(m === "online" ? "online" : m === "engines" ? "watch" : null);
+    if (m === "bot") setMode("normal");
+    else if (m === "coach") setMode("coach");
+    else if (m === "person") setMode("friend");
+    setQuery({ mode: m });
+  };
   useEffect(() => {
-    // An invite link (#o=…) or /play?online=1 opens the online card straight away.
-    if (window.location.hash.startsWith("#o=") || new URLSearchParams(window.location.search).get("online") === "1") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setExtra("online");
-    }
+    const m = new URLSearchParams(window.location.search).get("mode");
+    // The old address /play?online=1 opens online play.
+    const wanted: PlayModeParam | null =
+      m === "online" || m === "bot" || m === "coach" || m === "person" || m === "engines"
+        ? m
+        : new URLSearchParams(window.location.search).get("online") === "1"
+          ? "online"
+          : null;
+    if (!wanted) return;
+    const t = setTimeout(() => {
+      setExtra(wanted === "online" ? "online" : wanted === "engines" ? "watch" : null);
+      if (wanted === "bot") setMode("normal");
+      else if (wanted === "coach") setMode("coach");
+      else if (wanted === "person") setMode("friend");
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
   const [level, setLevel] = useState(4);
   const [colorChoice, setColorChoice] = useState<"w" | "b" | "random">("w");
@@ -208,7 +187,7 @@ export function PlayView() {
   const [drawOffer, setDrawOffer] = useState<Color | null>(null);
   /** Resign asks for confirmation first. */
   const [confirmResign, setConfirmResign] = useState(false);
-  /** An unfinished game saved in this browser, offered on the setup screen. */
+  /** An unfinished game saved earlier, offered on the setup screen. */
   const [saved, setSaved] = useState<SavedPlay | null>(null);
   const [evals, setEvals] = useState<Record<string, AnalysisSnapshot>>({});
   const [threats, setThreats] = useState<Record<string, Threat | null>>({});
@@ -229,8 +208,17 @@ export function PlayView() {
   const engineColor: Color = color === "w" ? "b" : "w";
   const coach = mode === "coach";
   const friend = mode === "friend";
-  const autoFlip = friend && boardView === "flip";
-  const twoBoards = friend && boardView === "two";
+  // Two boards side by side need a wide screen; on a phone the option is not offered and the board just flips.
+  const [wide, setWide] = useState(true);
+  useEffect(() => {
+    const q = window.matchMedia("(min-width: 640px)");
+    const sync = () => setWide(q.matches);
+    sync();
+    q.addEventListener("change", sync);
+    return () => q.removeEventListener("change", sync);
+  }, []);
+  const twoBoards = friend && boardView === "two" && wide;
+  const autoFlip = friend && (boardView === "flip" || (boardView === "two" && !wide));
 
   // ---- derived positions ------------------------------------------------------
   const plies = useMemo<Ply[]>(() => {
@@ -499,11 +487,12 @@ export function PlayView() {
   useEffect(() => {
     if (arrived.current) return;
     arrived.current = true;
-    const g = loadSavedPlay();
-    if (!g) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSaved(g);
-    if (params.get("playing") === "1") resume(g);
+    void docsReady().then(() => {
+      const g = loadSavedPlay();
+      if (!g) return;
+      setSaved(g);
+      if (params.get("playing") === "1") resume(g);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -756,135 +745,123 @@ export function PlayView() {
             </div>
           </Card>
         ) : null}
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <div className="contents" role="radiogroup" aria-label="Game mode">
-          {MODES.map(({ id, title, Icon }) => (
-            <button
-              key={id}
-              type="button"
-              role="radio"
-              aria-checked={extra === null && mode === id}
-              onClick={() => {
-                setOnlineMode(false);
-                setMode(id);
-              }}
-              className={cx(
-                "card relative flex flex-col items-start gap-2 p-4 text-left transition-colors",
-                extra === null && mode === id ? "!border-accent bg-accent-soft ring-2 ring-accent" : "opacity-80 hover:bg-surface-2 hover:opacity-100",
-              )}
-            >
-              {extra === null && mode === id ? (
-                <span className="absolute top-3 right-3 flex size-6 items-center justify-center rounded-full bg-accent text-accent-ink" aria-hidden>
-                  <Check className="size-4" />
-                </span>
-              ) : null}
-              <Icon className="size-6 text-accent" aria-hidden />
-              <span className="font-semibold">{title}</span>
-            </button>
-          ))}
-            <button
-              type="button"
-              role="radio"
-              aria-checked={onlineMode}
-              onClick={() => setOnlineMode(true)}
-              className={cx(
-                "card relative flex flex-col items-start gap-2 p-4 text-left transition-colors",
-                onlineMode ? "!border-accent bg-accent-soft ring-2 ring-accent" : "opacity-80 hover:bg-surface-2 hover:opacity-100",
-              )}
-            >
-              {onlineMode ? (
-                <span className="absolute top-3 right-3 flex size-6 items-center justify-center rounded-full bg-accent text-accent-ink" aria-hidden>
-                  <Check className="size-4" />
-                </span>
-              ) : null}
-              <Link2 className="size-6 text-accent" aria-hidden />
-              <span className="font-semibold">Play a friend online</span>
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={watchMode}
-              onClick={() => setExtra("watch")}
-              className={cx(
-                "card relative flex flex-col items-start gap-2 p-4 text-left transition-colors",
-                watchMode ? "!border-accent bg-accent-soft ring-2 ring-accent" : "opacity-80 hover:bg-surface-2 hover:opacity-100",
-              )}
-            >
-              {watchMode ? (
-                <span className="absolute top-3 right-3 flex size-6 items-center justify-center rounded-full bg-accent text-accent-ink" aria-hidden>
-                  <Check className="size-4" />
-                </span>
-              ) : null}
-              <Cpu className="size-6 text-accent" aria-hidden />
-              <span className="font-semibold">Watch engines</span>
-            </button>
+        {/* Two main ways to play, then the rest. Each has its own address (/play?mode=…). */}
+        <div className="space-y-2" role="radiogroup" aria-label="Game mode">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {(
+              [
+                { id: "online", title: "Play online", sub: "A friend, or any player", Icon: Globe },
+                { id: "computer", title: "Play the computer", sub: "A bot, or the coach", Icon: Swords },
+              ] as const
+            ).map(({ id, title, sub, Icon }) => {
+              const on = id === "online" ? onlineMode : extra === null && mode !== "friend";
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  aria-label={title}
+                  onClick={() => pickMode(id === "online" ? "online" : mode === "coach" ? "coach" : "bot")}
+                  className={cx(
+                    "card group relative flex items-center gap-3 overflow-hidden p-3 text-left transition-all sm:p-5",
+                    on ? "!border-accent bg-accent-soft ring-2 ring-accent" : "hover:-translate-y-0.5 hover:bg-surface-2",
+                  )}
+                >
+                  <span className={cx("grid size-10 shrink-0 place-items-center rounded-xl sm:size-12", on ? "bg-accent text-accent-ink" : "bg-surface-2 text-accent")}>
+                    <Icon className="size-5 sm:size-6" aria-hidden />
+                  </span>
+                  <span className="min-w-0" aria-hidden>
+                    <span className="block font-semibold sm:text-lg">{title}</span>
+                    <span className="block truncate text-xs text-ink-3 sm:text-sm">{sub}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            {(
+              [
+                { id: "person", title: "In person", Icon: Users, on: extra === null && mode === "friend" },
+                { id: "engines", title: "Watch engines", Icon: Cpu, on: watchMode },
+              ] as const
+            ).map(({ id, title, Icon, on }) => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => pickMode(id)}
+                className={cx(
+                  "inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors",
+                  on ? "border-accent bg-accent-soft text-ink ring-2 ring-accent" : "border-border text-ink-2 hover:bg-surface-2 hover:text-ink",
+                )}
+              >
+                <Icon className="size-4 text-accent" aria-hidden /> {title}
+              </button>
+            ))}
+            <Link href={`/editor?fen=${encodeURIComponent(startFen)}`} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3.5 text-sm font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink">
+              <SquarePen className="size-4 text-accent" aria-hidden /> Set up a position
+            </Link>
+          </div>
+          {extra === null && mode !== "friend" ? (
+            <div className="grid grid-cols-2 gap-1 rounded-full border border-border bg-surface p-1" role="radiogroup" aria-label="Opponent">
+              {(
+                [
+                  ["normal", "Bot", Bot],
+                  ["coach", "Coach", GraduationCap],
+                ] as const
+              ).map(([id, label, Icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === id}
+                  aria-label={id === "normal" ? "Play with Bot" : "Play with Coach"}
+                  onClick={() => pickMode(id === "normal" ? "bot" : "coach")}
+                  className={cx(
+                    "inline-flex h-9 items-center justify-center gap-1.5 rounded-full text-sm font-medium transition-colors",
+                    mode === id ? "bg-accent text-accent-ink shadow-sm" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+                  )}
+                >
+                  <Icon className="size-4" aria-hidden /> {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
         </div>
 
         {onlineMode ? (
-          <OnlineGame onActiveChange={setOnlineActive} />
+          <OnlinePanel />
         ) : watchMode ? (
           <EngineMatch onActiveChange={setWatchActive} />
         ) : (
-        <Card className="space-y-4 p-5">
+        <Card className="space-y-3 p-3 sm:space-y-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span className="text-ink-2">{startFen !== START_FEN ? "Starting from a custom position." : "Starting from the initial position."}</span>
+            <span className="text-ink-2 max-sm:hidden">{startFen !== START_FEN ? "Starting from a custom position." : "Starting from the initial position."}</span>
             <span className="flex gap-3">
               {startFen !== START_FEN ? (
                 <button type="button" className="text-ink-2 underline" onClick={() => { setStartFen(START_FEN); setQuery({ fen: null }); }}>
                   Reset
                 </button>
               ) : null}
-              <Link href={`/editor?fen=${encodeURIComponent(startFen)}`} className="text-ink-2 underline">
-                Set up position
-              </Link>
             </span>
           </div>
           {!friend ? (
             <>
-              <fieldset>
-                <legend className="mb-2 text-sm font-medium">Play as</legend>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["w", "random", "b"] as const).map((c) => (
-                    <label
-                      key={c}
-                      className={cx(
-                        "flex cursor-pointer flex-col items-center gap-1 rounded-xl border p-2 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--focus)]",
-                        colorChoice === c ? "border-accent bg-accent-soft ring-2 ring-accent" : "border-border hover:bg-surface-2",
-                      )}
-                    >
-                      <input type="radio" name="color" className="sr-only" checked={colorChoice === c} onChange={() => setColorChoice(c)} />
-                      <span className="relative block size-12" aria-hidden>
-                        {c === "random" ? (
-                          <>
-                            <span className="absolute inset-0 overflow-hidden" style={{ clipPath: "inset(0 50% 0 0)" }}>
-                              <KingIcon color="w" set={settings.pieceSet} />
-                            </span>
-                            <span className="absolute inset-0 overflow-hidden" style={{ clipPath: "inset(0 0 0 50%)" }}>
-                              <KingIcon color="b" set={settings.pieceSet} />
-                            </span>
-                          </>
-                        ) : (
-                          <KingIcon color={c} set={settings.pieceSet} />
-                        )}
-                      </span>
-                      <span className="font-medium">{c === "w" ? "White" : c === "b" ? "Black" : "Random"}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
+              <ColorPicker value={colorChoice} onChange={setColorChoice} />
               {coach ? (
                 <fieldset>
                   <legend className="mb-2 text-sm font-medium">Coach strength</legend>
                   <div className="flex items-center gap-4 rounded-xl border border-border p-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={COACH_AVATAR} alt="" className="size-16 shrink-0 rounded-full" draggable={false} />
+                    <img src={COACH_AVATAR} alt="" className="size-12 shrink-0 rounded-full sm:size-16" draggable={false} />
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">
                         {COACH_NAME} <span className="ml-1 rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-ink tabular">{cfg.rating}</span>
                       </p>
-                      <div className="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Coach rating">
+                      <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible" role="radiogroup" aria-label="Coach rating">
                         {PLAY_LEVELS.map((b) => (
                           <button
                             key={b.level}
@@ -893,7 +870,7 @@ export function PlayView() {
                             aria-checked={level === b.level}
                             onClick={() => setLevel(b.level)}
                             className={cx(
-                              "rounded-full border px-2.5 py-1 text-xs font-semibold tabular transition-colors",
+                              "shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold tabular transition-colors",
                               level === b.level ? "border-accent bg-accent text-accent-ink" : "border-border hover:bg-surface-2",
                             )}
                           >
@@ -903,17 +880,11 @@ export function PlayView() {
                       </div>
                     </div>
                   </div>
-                  <Toggle
-                    label="Show evaluation bar"
-                    description="The bar beside the board that shows who is better. Hide it if you would rather judge the position yourself."
-                    checked={settings.showEvalBar}
-                    onChange={(v) => updateSettings({ showEvalBar: v })}
-                  />
                 </fieldset>
               ) : (
                 <fieldset>
                   <legend className="mb-2 text-sm font-medium">Opponent</legend>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="radiogroup" aria-label="Choose your opponent">
+                  <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0" role="radiogroup" aria-label="Choose your opponent">
                     {PLAY_LEVELS.map((b) => (
                       <button
                         key={b.level}
@@ -923,12 +894,12 @@ export function PlayView() {
                         onClick={() => setLevel(b.level)}
                         title={b.label}
                         className={cx(
-                          "relative flex flex-col items-center gap-1 rounded-xl border p-2 text-center transition-colors",
+                          "relative flex w-[5.25rem] shrink-0 flex-col items-center gap-1 rounded-xl border p-2 text-center transition-colors sm:w-auto sm:shrink",
                           level === b.level ? "border-accent bg-accent-soft ring-2 ring-accent" : "border-border hover:bg-surface-2",
                         )}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={b.avatar} alt="" className="size-16 rounded-full" draggable={false} />
+                        <img src={b.avatar} alt="" className="size-12 rounded-full sm:size-16" draggable={false} />
                         <span className="text-sm font-semibold leading-tight">{b.name}</span>
                         <span className={cx("rounded-full px-2 py-0.5 text-[11px] font-semibold tabular", level === b.level ? "bg-accent text-accent-ink" : "bg-surface-2 text-ink-2")}>
                           {b.rating}
@@ -942,7 +913,7 @@ export function PlayView() {
           ) : (
             <fieldset>
               <legend className="mb-1 text-sm font-medium">Board view</legend>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {(
                   [
                     ["flip", "Flip each move", RefreshCw],
@@ -954,6 +925,7 @@ export function PlayView() {
                     key={id}
                     className={cx(
                       "flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border p-3 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--focus)]",
+                      id === "two" && "max-sm:hidden",
                       boardView === id ? "border-accent bg-accent-soft ring-2 ring-accent" : "border-border hover:bg-surface-2",
                     )}
                   >
@@ -966,28 +938,7 @@ export function PlayView() {
             </fieldset>
           )}
           {mode !== "coach" ? (
-          <fieldset>
-            <legend className="mb-1 text-sm font-medium">Time control</legend>
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
-              {TIME_CONTROLS.map((t) => {
-                const Icon = TC_ICON[t.kind];
-                return (
-                  <label
-                    key={t.id}
-                    className={cx(
-                      "flex cursor-pointer flex-col items-center gap-1 rounded-xl border px-1 py-2 text-center transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--focus)]",
-                      tcId === t.id ? "border-accent bg-accent-soft ring-2 ring-accent" : "border-border hover:bg-surface-2",
-                    )}
-                  >
-                    <input type="radio" name="tc" className="sr-only" checked={tcId === t.id} onChange={() => setTcId(t.id)} />
-                    <Icon className="size-5" style={{ color: TC_COLOR[t.kind] }} aria-hidden />
-                    <span className="text-xs font-semibold">{t.label}</span>
-                    <span className="text-[10px] capitalize text-ink-3">{t.kind === "none" ? "untimed" : t.kind}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
+          <TimeControlPicker value={tcId} onChange={setTcId} />
           ) : null}
           <Button variant="primary" size="lg" className="w-full" onClick={start}>
             Start

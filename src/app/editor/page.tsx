@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Suspense } from "react";
-import { Spinner } from "@/components/ui/primitives";
+import { BoardPageSkeleton } from "@/components/ui/Skeleton";
 import { EditorView } from "./EditorView";
 
 export const metadata: Metadata = {
@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 export default function EditorPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-4">
-      <PageHeader eyebrow="Tools" title="Board editor" subtitle="Set up any position, then analyze it, play it out against a bot, or share it." />
-      <Suspense fallback={<Spinner label="Loading…" />}>
+      <PageHeader eyebrow="Tools" title="Board editor" phone={false} />
+      <Suspense fallback={<BoardPageSkeleton label="Loading the board editor…" />}>
         <EditorView />
       </Suspense>
     </div>

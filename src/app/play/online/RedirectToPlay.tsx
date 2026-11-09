@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { Spinner } from "@/components/ui/primitives";
+import { BoardPageSkeleton } from "@/components/ui/Skeleton";
 
-/** Forward /play/online#o=… to /play#o=… (the invite link is kept). */
+/** Old address for online play: forward to Play, online. */
 export function RedirectToPlay() {
   useEffect(() => {
-    window.location.replace(`/play${window.location.hash || "?online=1"}`);
+    window.location.replace("/play?mode=online");
   }, []);
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 text-center">
-      <Spinner label="Opening Play…" />
-    </div>
+    <BoardPageSkeleton label="Opening Play…" className="mx-auto max-w-6xl px-4 py-4" />
   );
 }

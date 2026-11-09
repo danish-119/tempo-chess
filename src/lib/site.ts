@@ -3,7 +3,7 @@ export const SITE = {
   name: "Tempo",
   tagline: "Play, review and improve at chess — free",
   description:
-    "Play bots or a coach, review your Chess.com, Lichess and PGN games move by move, solve puzzles, master endgames and learn openings — free, private, no account. Stockfish runs in your browser.",
+    "Play bots or a coach, review your Chess.com, Lichess and PGN games move by move, solve puzzles, master endgames and learn openings, all for free. Stockfish runs in your browser.",
   url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tempochess.vercel.app").replace(/\/$/, ""),
   /** Public source repository (required for GPL source availability). */
   repoUrl: process.env.NEXT_PUBLIC_REPO_URL ?? "https://github.com/danish-119/tempo-chess",
@@ -20,10 +20,9 @@ export const SITE = {
 
 /** Primary navigation. `match` lists the routes that highlight each item. */
 export const NAV = [
-  { href: "/play", label: "Play", match: ["/play"] },
+  { href: "/play", label: "Play", match: ["/play", "/editor"] },
   { href: "/review", label: "Review", match: ["/review", "/analyze"] },
   { href: "/practice", label: "Practice", match: ["/practice"] },
   { href: "/learn", label: "Learn", match: ["/learn"] },
   { href: "/progress", label: "Progress", match: ["/progress"] },
-  { href: "/editor", label: "Editor", match: ["/editor"] },
 ] as const;

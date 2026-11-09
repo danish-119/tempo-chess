@@ -42,6 +42,8 @@ export function EditorView() {
   const [orientation, setOrientation] = useState<"white" | "black">("white");
   const [tool, setTool] = useState<Tool>("move");
   const [fenInput, setFenInput] = useState<string | null>(null);
+  /** On a phone the position options live in a sheet, so the page itself stays one screen tall. */
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [fenError, setFenError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -185,7 +187,7 @@ export function EditorView() {
       }}
     >
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
-        <div className="mx-auto flex w-full max-w-[min(100%,calc(100dvh-17rem))] flex-col gap-2">
+        <div className="mx-auto flex w-full max-w-[min(100%,calc(100dvh-19.5rem))] flex-col gap-2 lg:max-w-[min(100%,calc(100dvh-17rem))]">
           {palette(top)}
           <div className={cx(tool !== "move" && "cursor-crosshair")} role="group" aria-label="Board editor">
             <Chessboard />
@@ -194,7 +196,16 @@ export function EditorView() {
         </div>
 
         <div className="space-y-3">
-          <Card className="divide-y divide-border p-0">
+          <Button className="w-full lg:hidden" aria-expanded={optionsOpen} onClick={() => setOptionsOpen((o) => !o)}>
+            {optionsOpen ? "Close options" : "Options"}
+          </Button>
+          <Card
+            className={cx(
+              "divide-y divide-border p-0",
+              "max-lg:fixed max-lg:inset-x-3 max-lg:bottom-[calc(4.9rem+env(safe-area-inset-bottom))] max-lg:z-30 max-lg:max-h-[62dvh] max-lg:overflow-y-auto max-lg:bg-bg max-lg:shadow-[0_12px_40px_rgba(0,0,0,0.45)]",
+              !optionsOpen && "max-lg:hidden",
+            )}
+          >
             <fieldset className="space-y-3 p-4">
               <legend className="eyebrow float-left mb-3 w-full !text-[11px]">Side to move</legend>
               <div className="clear-both grid grid-cols-2 gap-1 rounded-xl border border-border bg-bg p-1" role="radiogroup" aria-label="Side to move">

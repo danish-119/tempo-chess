@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Spinner } from "@/components/ui/primitives";
+import { BoardPageSkeleton } from "@/components/ui/Skeleton";
 import { PlayView } from "./PlayView";
 
 export const metadata: Metadata = {
@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 export default function PlayPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-4">
-      <h1 className="mb-3 font-serif text-2xl font-semibold tracking-tight">Play</h1>
-      <Suspense fallback={<Spinner label="Loading…" />}>
+      <h1 className="mb-3 font-serif text-2xl font-semibold tracking-tight max-sm:sr-only">Play</h1>
+      <Suspense fallback={<BoardPageSkeleton label="Loading Play…" />}>
         <PlayView />
       </Suspense>
     </div>

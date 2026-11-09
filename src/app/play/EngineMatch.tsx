@@ -289,14 +289,7 @@ export function EngineMatch({ onActiveChange }: { onActiveChange?: (active: bool
           <p className="mt-1 text-xs text-ink-3">You can change this while the match is running.</p>
         </fieldset>
         <Toggle
-          label="Show evaluation bar"
-          description="The bar beside the board that shows who is better. Hide it if you would rather judge the game yourself."
-          checked={showEval}
-          onChange={(v) => updateSettings({ showEvalBar: v })}
-        />
-        <Toggle
           label="Vary the opening"
-          description="Engines are deterministic, so two of the same strength would play the same game every time. This picks among their best few moves for the first five moves each, so every match is different."
           checked={variety}
           onChange={setVariety}
         />
