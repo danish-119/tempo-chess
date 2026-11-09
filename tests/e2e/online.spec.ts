@@ -51,8 +51,8 @@ test.describe("online games", () => {
     const ben = await signedInPlayer(browser, "Ben");
 
     await anna.page.goto("/play?mode=online");
-    await anna.page.getByRole("radio", { name: "5 min" }).click();
-    await anna.page.getByRole("radio", { name: "White" }).click();
+    await anna.page.getByRole("radio", { name: "5 min blitz", exact: true }).check({ force: true });
+    await anna.page.getByRole("radio", { name: "White" }).check({ force: true });
     await anna.page.getByRole("button", { name: "Create a game" }).click();
     await anna.page.waitForURL(/\/play\/game\?code=[A-Z2-9]{6}$/);
     await expect(anna.page.getByRole("heading", { name: "Send this code to your friend" })).toBeVisible();
