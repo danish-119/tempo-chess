@@ -1,0 +1,10 @@
+# Local settings for `npm run dev`. Copy to .dev.vars (git-ignored) and fill in. These override wrangler.jsonc.
+# A random secret for signing sessions, e.g. `openssl rand -base64 32`.
+BETTER_AUTH_SECRET=
+# The app's local addresses (dev server and production preview), and the API's own.
+APP_ORIGIN=http://localhost:3000,http://localhost:4173
+BETTER_AUTH_URL=http://localhost:8787
+# Optional: a Google OAuth client with the redirect URI http://localhost:8787/api/auth/callback/google.
+# Without it, Google sign-in is off locally; guests still work, and tests sign in with scripts/test-player.mjs.
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=

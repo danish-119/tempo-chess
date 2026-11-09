@@ -1,0 +1,38 @@
+{
+  "name": "tempo-server",
+  "version": "0.1.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "types": "wrangler types",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply tempo --local",
+    "db:migrate:remote": "wrangler d1 migrations apply tempo --remote",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.9.1",
+    "better-auth": "^1.7.18",
+    "chess.js": "^1.4.0",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.17",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261107.1",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.158.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261104.1": true,
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true
+  }
+}

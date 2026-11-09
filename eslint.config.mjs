@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "coverage/**",
     "playwright-report/**",
     "test-results/**",
+    // The API server is its own package with its own checks.
+    "server/**",
   ]),
 ]);
 

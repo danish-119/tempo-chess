@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tempo-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tempo",
+      // The production database (not a secret). Local development uses its own copy under .wrangler/.
+      "database_id": "74f35b93-88f4-491d-802e-d563d970de0a",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "GAME", "class_name": "GameRoom" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }],
+  // Daily clean-up of guests who have not been back for 30 days.
+  "triggers": { "crons": ["17 3 * * *"] },
+  // Production settings. For local development, server/.dev.vars overrides them (see .dev.vars.example).
+  "vars": {
+    "APP_ORIGIN": "https://tempochess.vercel.app",
+    "BETTER_AUTH_URL": "https://tempo-api.tempo-server.workers.dev"
+  }
+  // Secrets (set with `wrangler secret put`, or in .dev.vars locally):
+  //   BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+  // Optional var: COOKIE_DOMAIN, once the app and the API share a domain of your own.
+}
