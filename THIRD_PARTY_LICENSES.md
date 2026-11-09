@@ -26,8 +26,19 @@ It includes or depends on the following third-party components.
 | React / React DOM | 19.3 | MIT | UI | https://github.com/facebook/react |
 | Tailwind CSS | 4 | MIT | Styles | https://github.com/tailwindlabs/tailwindcss |
 | lucide-react | 1.x | ISC | Icons | https://github.com/lucide-icons/lucide |
-| idb | 8.0.4 | ISC | IndexedDB wrapper | https://github.com/jakearchibald/idb |
+| Better Auth (client) | 1.7 | MIT | Sign-in from the app | https://github.com/better-auth/better-auth |
 | zod | 4.x | MIT | Validation | https://github.com/colinhacks/zod |
+
+## API server (`server/`, runs on Cloudflare; not distributed to users)
+
+| Component | Version | License | Use | Source |
+| --- | --- | --- | --- | --- |
+| Hono | 4.x | MIT | HTTP routing | https://github.com/honojs/hono |
+| Better Auth | 1.7 | MIT | Accounts, sessions, Google sign-in, guest sessions | https://github.com/better-auth/better-auth |
+| Drizzle ORM / drizzle-kit | 0.45 / 0.31 | Apache-2.0 | Database queries and migrations | https://github.com/drizzle-team/drizzle-orm |
+| chess.js | 1.4.0 | BSD-2-Clause | Move checking for online games | https://github.com/jhlywa/chess.js |
+| zod, @hono/zod-validator | 4.x / 0.9 | MIT | Input validation | https://github.com/colinhacks/zod |
+| Wrangler | 4.x | MIT OR Apache-2.0 | Local development and deployment | https://github.com/cloudflare/workers-sdk |
 
 ## Stockfish GPL-3.0 compliance
 
@@ -46,6 +57,6 @@ The sound files are licensed AGPL-3.0-or-later. GPL-3.0 §13 permits combining G
 
 ## Algorithms credited
 
-- Online services (not bundled, queried at runtime): Lichess endgame tablebase (`tablebase.lichess.ovh`, Syzygy tables) and Lichess opening explorer (`explorer.lichess.org`, Masters/Lichess game statistics), used under the Lichess API terms.
+- Online services (not bundled, queried at runtime): Lichess endgame tablebase (`tablebase.lichess.ovh`, Syzygy tables) and the Lichess game export API, used under the Lichess API terms. Guest pictures come from DiceBear (`api.dicebear.com`, MIT): Avataaars by Pablo Stanley (free for personal and commercial use), and Open Peeps by Pablo Stanley and Thumbs, both public domain (CC0 1.0).
 - Win-probability curve and per-move accuracy formula: published by Lichess at https://lichess.org/page/accuracy (mathematical formulas, re-implemented).
 - Classification bands follow the expected-points ranges published by Chess.com's help centre; the implementation and Brilliant/Great/Miss rules are Tempo's own.
