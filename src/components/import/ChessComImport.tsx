@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, Search } from "lucide-react";
 import { useSettings } from "@/components/providers/SettingsProvider";
-import { Alert, Button, EmptyState, Field, Spinner, inputClass } from "@/components/ui/primitives";
+import { Alert, Button, EmptyState, Field, inputClass } from "@/components/ui/primitives";
+import { ListSkeleton } from "@/components/ui/Skeleton";
 import {
   type ArchiveMonth,
   type ChessComGameSummary,
@@ -268,7 +269,7 @@ export function ChessComImport({ initialUser, initialMonth }: { initialUser?: st
               </div>
 
               {loading === "games" ? (
-                <Spinner label="Loading games from Chess.com…" />
+                <ListSkeleton label="Loading games from Chess.com…" />
               ) : games ? (
                 <>
                   <p className="text-xs text-ink-3" aria-live="polite">

@@ -5,7 +5,8 @@ import { formatSanLine, playLine } from "@/lib/chess/line";
 import type { AnalysisSnapshot } from "@/lib/engine/engine";
 import { formatScore } from "@/lib/engine/score";
 import type { EngineStatus } from "@/hooks/useEngine";
-import { Alert, Button, Spinner, cx } from "@/components/ui/primitives";
+import { Alert, Button, cx } from "@/components/ui/primitives";
+import { PanelSkeleton } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 
 interface Props {
@@ -81,7 +82,7 @@ export function EngineLines({ fen, status, snapshot, running, paused, enabled, b
       </div>
 
       {busyReason ? <p className="text-xs text-ink-3">{busyReason}</p> : null}
-      {status.state === "loading" ? <Spinner label="Loading Stockfish…" /> : null}
+      {status.state === "loading" ? <PanelSkeleton label="Loading Stockfish…" lines={3} /> : null}
       {paused ? (
         <p className="flex items-center gap-1.5 text-xs text-ink-3">
           <Pause className="size-3.5" aria-hidden /> Paused while the tab is hidden.

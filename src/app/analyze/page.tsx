@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AnalysisWorkspace } from "@/components/analysis/AnalysisWorkspace";
-import { Spinner } from "@/components/ui/primitives";
+import { BoardPageSkeleton } from "@/components/ui/Skeleton";
 
 export const metadata: Metadata = {
   title: "Analyze",
@@ -15,9 +15,7 @@ export default function AnalyzePage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-7xl px-4 py-10">
-          <Spinner label="Loading analysis board…" />
-        </div>
+        <BoardPageSkeleton label="Loading the analysis board…" className="mx-auto max-w-7xl px-4 py-4" />
       }
     >
       <AnalysisWorkspace />

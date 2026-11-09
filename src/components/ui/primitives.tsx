@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { forwardRef, useId } from "react";
-import { AlertTriangle, CheckCircle2, Info, Loader2, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
 
 export function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
@@ -46,7 +46,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={loading || undefined}
       {...rest}
     >
-      {loading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+      {loading ? <LoadingDots /> : null}
       {children}
     </button>
   );
@@ -191,10 +191,22 @@ export function Field({
 export const inputClass =
   "h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-ink placeholder:text-ink-3 focus-visible:outline-2 aria-[invalid=true]:border-bad";
 
+/** Three dots that rise in turn: "working on it", for buttons and short actions. Content that is loading uses a skeleton (Skeleton.tsx). */
+export function LoadingDots({ className }: { className?: string }) {
+  return (
+    <span aria-hidden className={cx("loading-dots", className)}>
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}
+
+/** A short action in progress, with its label ("Thinking…", "Checking your move…"). */
 export function Spinner({ label }: { label: string }) {
   return (
     <span role="status" className="inline-flex items-center gap-2 text-sm text-ink-2">
-      <Loader2 className="size-4 animate-spin" aria-hidden />
+      <LoadingDots className="text-accent" />
       {label}
     </span>
   );

@@ -1,10 +1,10 @@
 "use client";
 
 import { Chess } from "chess.js";
-import { Clapperboard, Download, Loader2 } from "lucide-react";
+import { Clapperboard, Download } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useSettings } from "@/components/providers/SettingsProvider";
-import { Alert, Button } from "@/components/ui/primitives";
+import { Alert, Button, LoadingDots } from "@/components/ui/primitives";
 import { boardTheme, pieceUrl } from "@/lib/appearance";
 import type { ImportedGame } from "@/lib/chess/types";
 import { evalBarFraction } from "@/lib/engine/score";
@@ -200,7 +200,7 @@ export function GifExportButton({ game, review, orientation }: { game: ImportedG
       <p className="text-xs text-ink-3">Every move with its grade and the evaluation bar. Made on your device, nothing is uploaded.</p>
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" onClick={make} disabled={busy}>
-          {busy ? <Loader2 className="mr-1.5 size-4 animate-spin" aria-hidden /> : null}
+          {busy ? <LoadingDots className="mr-1.5" /> : null}
           {busy ? `Creating… ${progress}%` : result ? "Create again" : "Create GIF"}
         </Button>
         {result ? (

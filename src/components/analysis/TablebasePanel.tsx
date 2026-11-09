@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Database } from "lucide-react";
-import { SectionTitle, Spinner, cx } from "@/components/ui/primitives";
+import { SectionTitle, cx } from "@/components/ui/primitives";
+import { PanelSkeleton } from "@/components/ui/Skeleton";
 import { type Outcome, type TablebaseResult, distanceLabel, fetchTablebase, moveOutcome, tablebaseApplies, verdict } from "@/lib/tablebase";
 
 const OUTCOME_STYLE: Record<Outcome, string> = {
@@ -51,7 +52,7 @@ export function TablebasePanel({ fen, onPlay }: { fen: string; onPlay: (uci: str
         </span>
       </SectionTitle>
       {!current || current.status === "loading" ? (
-        <Spinner label="Looking up…" />
+        <PanelSkeleton label="Looking up the tablebase…" lines={2} />
       ) : current.status === "error" ? (
         <p className="text-sm text-ink-3">{current.message}</p>
       ) : (
