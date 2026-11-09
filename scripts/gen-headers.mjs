@@ -2,10 +2,11 @@
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ENGINE_CACHE, SECURITY_HEADERS, SW_CACHE } from "./headers.mjs";
+import { ENGINE_CACHE, SW_CACHE, apiOrigin, securityHeaders } from "./headers.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const entries = Object.entries(SECURITY_HEADERS);
+// For the deployed API: the host reads these files before any build runs.
+const entries = Object.entries(securityHeaders(apiOrigin({ deployed: true })));
 
 const vercel = {
   $schema: "https://openapi.vercel.sh/vercel.json",

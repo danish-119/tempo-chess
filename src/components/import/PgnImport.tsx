@@ -123,7 +123,7 @@ export function PgnImport({ mode }: { mode: "upload" | "paste" }) {
       await saveGame(game);
       router.push(`/analyze?game=${encodeURIComponent(game.id)}`);
     } catch (err) {
-      setError(err instanceof StorageError ? err.message : "Could not save the game in this browser.");
+      setError(err instanceof StorageError ? err.message : "Could not save the game.");
       setBusy(false);
     }
   };

@@ -3,7 +3,7 @@ import { ProgressView } from "./ProgressView";
 
 export const metadata: Metadata = {
   title: "Progress",
-  description: "Your practice streak, puzzle rating estimate, daily puzzle and mistake bank — all stored privately on this device.",
+  description: "Your practice streak, puzzle rating estimate, daily puzzle and the endgames you have mastered, saved to your account.",
   alternates: { canonical: "/progress" },
 };
 

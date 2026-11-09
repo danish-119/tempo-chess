@@ -20,8 +20,8 @@
     "check": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
+    "better-auth": "^1.7.18",
     "chess.js": "^1.4.0",
-    "idb": "^8.0.4",
     "lucide-react": "^1.58.0",
     "next": "16.4.2",
     "react": "19.3.0",
@@ -44,13 +44,12 @@
     "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
-    "fake-indexeddb": "^6.2.6",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.5"
   },
-  "description": "Tempo \u2014 free, private chess game review powered by Stockfish.",
+  "description": "Tempo — free, private chess game review powered by Stockfish.",
   "license": "GPL-3.0-or-later",
   "engines": {
     "node": ">=20.9"

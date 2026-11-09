@@ -1,13 +1,17 @@
-import { type DBSchema, type IDBPDatabase, openDB } from "idb";
 import type { ImportedGame } from "@/lib/chess/types";
+import { ApiError, api } from "@/lib/api";
+import { docsReady, readDoc, resetDocs, retryWhenOnline, writeDoc } from "@/lib/account/docs";
+import { accountReady, firstSave } from "@/lib/account/session";
 import { type Progress, ProgressSchema, emptyProgress } from "@/lib/progress";
 import type { GameReview } from "@/lib/review/types";
 
 /**
- * Local persistence (IndexedDB). Nothing here ever leaves the browser.
- * If IndexedDB is unavailable (private mode in some browsers, blocked
- * storage), an in-memory fallback keeps the app usable for the session and
- * `storageStatus()` reports that data will not persist.
+ * Saved games, reviews and progress.
+ *
+ * A signed-in player's data lives in their account on the Tempo server; this module keeps a copy in memory so
+ * pages read it instantly, and writes go to the server. This is the same for a Google account and for a guest. A
+ * visitor's data is in memory until their first save makes them a guest, and is then uploaded (`uploadMemory`).
+ * Nothing is written to the browser's own storage.
  */
 export interface CacheEntry {
   url: string;
@@ -21,15 +25,8 @@ export interface SavedGame {
   savedAt: number;
   updatedAt: number;
   hasReview: boolean;
-  /** Username the user identifies as, used for "my colour" statistics. */
+  /** The side the player had in this game, used for "my colour" statistics. */
   perspective?: "w" | "b";
-}
-
-interface TempoDB extends DBSchema {
-  games: { key: string; value: SavedGame; indexes: { updatedAt: number } };
-  reviews: { key: string; value: GameReview };
-  cache: { key: string; value: CacheEntry };
-  progress: { key: string; value: { id: string; data: Progress } };
 }
 
 export type StorageErrorCode = "QUOTA" | "UNAVAILABLE" | "CORRUPT" | "UNKNOWN";
@@ -43,57 +40,34 @@ export class StorageError extends Error {
   }
 }
 
-const DB_NAME = "tempo";
-const DB_VERSION = 2;
-
-let dbPromise: Promise<IDBPDatabase<TempoDB> | null> | null = null;
 const memory = {
   games: new Map<string, SavedGame>(),
   reviews: new Map<string, GameReview>(),
   cache: new Map<string, CacheEntry>(),
-  progress: new Map<string, { id: string; data: Progress }>(),
 };
+/** Whether the signed-in player's full game list has been fetched into memory. */
+let gamesLoaded = false;
 
-function getDb(): Promise<IDBPDatabase<TempoDB> | null> {
-  if (dbPromise) return dbPromise;
-  if (typeof indexedDB === "undefined") {
-    dbPromise = Promise.resolve(null);
-    return dbPromise;
-  }
-  dbPromise = openDB<TempoDB>(DB_NAME, DB_VERSION, {
-    upgrade(db, oldVersion) {
-      if (oldVersion < 1) {
-        const games = db.createObjectStore("games", { keyPath: "id" });
-        games.createIndex("updatedAt", "updatedAt");
-        db.createObjectStore("reviews", { keyPath: "gameId" });
-        db.createObjectStore("cache", { keyPath: "url" });
-      }
-      if (oldVersion < 2) db.createObjectStore("progress", { keyPath: "id" });
-    },
-  }).catch(() => null);
-  return dbPromise;
-}
-
-export async function storageStatus(): Promise<"persistent" | "memory"> {
-  return (await getDb()) ? "persistent" : "memory";
+/** Forget everything held in memory (on sign-in, sign-out, and in tests). */
+export function resetMemory(): void {
+  for (const m of Object.values(memory)) m.clear();
+  outbox.clear();
+  gamesLoaded = false;
 }
 
 /** Reset the module (tests only). */
 export function __resetStorageForTests(): void {
-  dbPromise = null;
-  for (const m of Object.values(memory)) m.clear();
+  resetMemory();
+  resetDocs();
 }
 
 function wrap(err: unknown): StorageError {
   if (err instanceof StorageError) return err;
-  const name = err instanceof DOMException ? err.name : "";
-  if (name === "QuotaExceededError") {
-    return new StorageError("QUOTA", "Your browser's storage is full. Delete some saved games and try again.");
+  if (err instanceof ApiError) {
+    if (err.code === "limit_reached" || err.status === 413) return new StorageError("QUOTA", err.message);
+    if (err.code === "offline" || err.status === 401) return new StorageError("UNAVAILABLE", err.message);
   }
-  if (name === "InvalidStateError" || name === "SecurityError") {
-    return new StorageError("UNAVAILABLE", "Browser storage is not available (private browsing or blocked site data).");
-  }
-  return new StorageError("UNKNOWN", err instanceof Error ? err.message : "Unexpected storage error.");
+  return new StorageError("UNKNOWN", err instanceof Error ? err.message : "Could not save. Please try again.");
 }
 
 function isSavedGame(v: unknown): v is SavedGame {
@@ -102,175 +76,172 @@ function isSavedGame(v: unknown): v is SavedGame {
   return typeof s.id === "string" && !!s.game && Array.isArray(s.game.moves) && typeof s.game.originalPgn === "string";
 }
 
-// --- games -----------------------------------------------------------------
-export async function saveGame(game: ImportedGame, opts: { perspective?: "w" | "b" } = {}): Promise<SavedGame> {
-  const now = Date.now();
+const isReview = (r: unknown): r is GameReview => !!r && Array.isArray((r as GameReview).moves) && Array.isArray((r as GameReview).positions);
+
+async function signedIn(): Promise<boolean> {
+  return (await accountReady()).status === "user";
+}
+
+/**
+ * Send a write to the account. Offline (bots and the coach work without a connection), the write waits in an
+ * outbox and is sent when the connection returns, so the game is not lost while the tab stays open; the newest
+ * write for the same path wins.
+ */
+const outbox = new Map<string, { method: "PUT" | "DELETE"; body?: unknown }>();
+async function send(path: string, method: "PUT" | "DELETE", body?: unknown): Promise<void> {
   try {
-    const db = await getDb();
-    const existing = db ? await db.get("games", game.id) : memory.games.get(game.id);
-    const record: SavedGame = {
-      id: game.id,
-      game,
-      savedAt: existing?.savedAt ?? now,
-      updatedAt: now,
-      hasReview: existing?.hasReview ?? false,
-      perspective: opts.perspective ?? existing?.perspective,
-    };
-    if (db) await db.put("games", record);
-    else memory.games.set(record.id, record);
-    return record;
+    await api(path, { method, body });
+    outbox.delete(path);
   } catch (err) {
-    throw wrap(err);
+    if (err instanceof ApiError && err.code === "offline") {
+      const first = outbox.size === 0;
+      outbox.set(path, { method, body });
+      if (first) retryWhenOnline(() => void drainOutbox());
+      return;
+    }
+    throw err;
   }
 }
 
+async function drainOutbox(): Promise<void> {
+  for (const [path, w] of [...outbox]) {
+    try {
+      await send(path, w.method, w.body);
+    } catch (err) {
+      console.warn("Could not save after reconnecting:", err);
+      outbox.delete(path);
+    }
+  }
+}
+
+// --- games -----------------------------------------------------------------
+export async function saveGame(game: ImportedGame, opts: { perspective?: "w" | "b" } = {}): Promise<SavedGame> {
+  const now = Date.now();
+  const existing = memory.games.get(game.id) ?? ((await signedIn()) && !gamesLoaded ? await getGame(game.id).catch(() => null) : null);
+  const record: SavedGame = {
+    id: game.id,
+    game,
+    savedAt: existing?.savedAt ?? now,
+    updatedAt: now,
+    hasReview: existing?.hasReview ?? false,
+    perspective: opts.perspective ?? existing?.perspective,
+  };
+  if (await signedIn()) {
+    try {
+      await send(`/api/v1/games/${encodeURIComponent(record.id)}`, "PUT", { game: record });
+    } catch (err) {
+      throw wrap(err);
+    }
+  }
+  memory.games.set(record.id, record);
+  firstSave();
+  return record;
+}
+
 export async function getGame(id: string): Promise<SavedGame | null> {
+  const cached = memory.games.get(id);
+  if (cached) return cached;
+  if (!(await signedIn())) return null;
   try {
-    const db = await getDb();
-    const value = db ? await db.get("games", id) : memory.games.get(id);
-    if (value === undefined) return null;
-    if (!isSavedGame(value)) throw new StorageError("CORRUPT", "This saved game is damaged and cannot be opened.");
-    return value;
+    const { game } = await api<{ game: unknown }>(`/api/v1/games/${encodeURIComponent(id)}`);
+    if (!isSavedGame(game)) throw new StorageError("CORRUPT", "This saved game is damaged and cannot be opened.");
+    memory.games.set(game.id, game);
+    return game;
   } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
     throw wrap(err);
   }
 }
 
 export async function listGames(): Promise<SavedGame[]> {
-  try {
-    const db = await getDb();
-    const all = db ? await db.getAllFromIndex("games", "updatedAt") : [...memory.games.values()];
-    return all.filter(isSavedGame).sort((a, b) => b.updatedAt - a.updatedAt);
-  } catch (err) {
-    throw wrap(err);
+  if ((await signedIn()) && !gamesLoaded) {
+    try {
+      const all: SavedGame[] = [];
+      let before: number | null = null;
+      do {
+        const page: { games: unknown[]; next: number | null } = await api(`/api/v1/games?limit=500${before ? `&before=${before}` : ""}`);
+        for (const g of page.games) if (isSavedGame(g)) all.push(g);
+        before = page.next;
+      } while (before);
+      for (const g of all) memory.games.set(g.id, g);
+      gamesLoaded = true;
+    } catch (err) {
+      throw wrap(err);
+    }
   }
+  return [...memory.games.values()].filter(isSavedGame).sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 export async function deleteGame(id: string): Promise<void> {
-  try {
-    const db = await getDb();
-    if (db) {
-      const tx = db.transaction(["games", "reviews"], "readwrite");
-      await tx.objectStore("games").delete(id);
-      await tx.objectStore("reviews").delete(id);
-      await tx.done;
-    } else {
-      memory.games.delete(id);
-      memory.reviews.delete(id);
+  if (await signedIn()) {
+    try {
+      await send(`/api/v1/games/${encodeURIComponent(id)}`, "DELETE");
+    } catch (err) {
+      throw wrap(err);
     }
-  } catch (err) {
-    throw wrap(err);
   }
-}
-
-export async function clearAll(): Promise<void> {
-  try {
-    const db = await getDb();
-    if (db) {
-      const tx = db.transaction(["games", "reviews", "cache", "progress"], "readwrite");
-      await Promise.all([
-        tx.objectStore("progress").clear(),
-        tx.objectStore("games").clear(),
-        tx.objectStore("reviews").clear(),
-        tx.objectStore("cache").clear(),
-        tx.done,
-      ]);
-    } else {
-      for (const m of Object.values(memory)) m.clear();
-    }
-  } catch (err) {
-    throw wrap(err);
-  }
+  memory.games.delete(id);
+  memory.reviews.delete(id);
 }
 
 // --- reviews ---------------------------------------------------------------
 export async function saveReview(review: GameReview): Promise<void> {
-  try {
-    const db = await getDb();
-    if (db) {
-      const tx = db.transaction(["reviews", "games"], "readwrite");
-      await tx.objectStore("reviews").put(review);
-      const g = await tx.objectStore("games").get(review.gameId);
-      if (g) await tx.objectStore("games").put({ ...g, hasReview: true, updatedAt: Date.now() });
-      await tx.done;
-    } else {
-      memory.reviews.set(review.gameId, review);
-      const g = memory.games.get(review.gameId);
-      if (g) memory.games.set(g.id, { ...g, hasReview: true, updatedAt: Date.now() });
+  const g = memory.games.get(review.gameId) ?? (await getGame(review.gameId).catch(() => null));
+  const updated = g ? { ...g, hasReview: true, updatedAt: Date.now() } : null;
+  if (await signedIn()) {
+    try {
+      await send(`/api/v1/reviews/${encodeURIComponent(review.gameId)}`, "PUT", { review });
+      if (updated) await send(`/api/v1/games/${encodeURIComponent(updated.id)}`, "PUT", { game: updated });
+    } catch (err) {
+      throw wrap(err);
     }
-  } catch (err) {
-    throw wrap(err);
   }
+  memory.reviews.set(review.gameId, review);
+  if (updated) memory.games.set(updated.id, updated);
+  firstSave();
+}
+
+/** A visitor has just become a guest: upload the games and reviews they made before that. */
+export async function uploadMemory(): Promise<void> {
+  for (const g of memory.games.values()) await send(`/api/v1/games/${encodeURIComponent(g.id)}`, "PUT", { game: g }).catch((err) => console.warn("Could not save a game:", err));
+  for (const r of memory.reviews.values()) await send(`/api/v1/reviews/${encodeURIComponent(r.gameId)}`, "PUT", { review: r }).catch((err) => console.warn("Could not save a review:", err));
+  gamesLoaded = true;
 }
 
 export async function getReview(gameId: string): Promise<GameReview | null> {
+  const cached = memory.reviews.get(gameId);
+  if (cached) return cached;
+  if (!(await signedIn())) return null;
   try {
-    const db = await getDb();
-    const r = db ? await db.get("reviews", gameId) : memory.reviews.get(gameId);
-    if (!r) return null;
-    if (!Array.isArray(r.moves) || !Array.isArray(r.positions)) return null; // corrupt: re-run review
-    return r;
+    const { review } = await api<{ review: unknown }>(`/api/v1/reviews/${encodeURIComponent(gameId)}`);
+    if (!isReview(review)) return null; // missing or damaged: the review is simply run again
+    memory.reviews.set(gameId, review);
+    return review;
   } catch (err) {
     throw wrap(err);
   }
 }
 
-export async function listReviews(): Promise<GameReview[]> {
-  try {
-    const db = await getDb();
-    const all = db ? await db.getAll("reviews") : [...memory.reviews.values()];
-    return all.filter((r) => r && Array.isArray(r.moves) && Array.isArray(r.positions));
-  } catch (err) {
-    throw wrap(err);
-  }
-}
-
-// --- HTTP cache (public Chess.com responses only) --------------------------
+// --- HTTP cache (public Chess.com responses, for this visit only) -----------
 export async function cacheGet(url: string): Promise<CacheEntry | null> {
-  try {
-    const db = await getDb();
-    return (db ? await db.get("cache", url) : memory.cache.get(url)) ?? null;
-  } catch {
-    return null; // cache failures must never break imports
-  }
+  return memory.cache.get(url) ?? null;
 }
 
 export async function cacheSet(url: string, data: unknown): Promise<void> {
-  const entry: CacheEntry = { url, data, fetchedAt: Date.now() };
-  try {
-    const db = await getDb();
-    if (db) await db.put("cache", entry);
-    else memory.cache.set(url, entry);
-  } catch {
-    memory.cache.set(url, entry);
-  }
+  memory.cache.set(url, { url, data, fetchedAt: Date.now() });
 }
 
-// --- progress (streaks, rating estimate, mistake bank) ------------------------
-const PROGRESS_ID = "profile";
+// --- progress (streaks, rating estimate, finished lessons) ------------------------
 const PROGRESS_EVENT = "tempo:progress";
 
 export async function getProgress(): Promise<Progress> {
-  try {
-    const db = await getDb();
-    const row = db ? await db.get("progress", PROGRESS_ID) : memory.progress.get(PROGRESS_ID);
-    if (!row) return emptyProgress();
-    const parsed = ProgressSchema.safeParse(row.data);
-    return parsed.success ? parsed.data : emptyProgress();
-  } catch {
-    return emptyProgress();
-  }
+  await docsReady();
+  const parsed = ProgressSchema.safeParse(readDoc<unknown>("progress", null));
+  return parsed.success ? parsed.data : emptyProgress();
 }
 
 export async function setProgress(data: Progress): Promise<void> {
-  try {
-    const db = await getDb();
-    const row = { id: PROGRESS_ID, data };
-    if (db) await db.put("progress", row);
-    else memory.progress.set(PROGRESS_ID, row);
-  } catch (err) {
-    throw wrap(err);
-  }
+  writeDoc("progress", data);
   if (typeof window !== "undefined") window.dispatchEvent(new Event(PROGRESS_EVENT));
 }
 
@@ -287,3 +258,4 @@ export function updateProgress(fn: (p: Progress) => Progress): Promise<Progress>
 }
 
 export const PROGRESS_CHANGED = PROGRESS_EVENT;
+

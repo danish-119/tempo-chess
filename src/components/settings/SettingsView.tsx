@@ -1,16 +1,15 @@
 "use client";
 
 import { Cpu, Monitor, Moon, Palette, ShieldCheck, Sun, Volume2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSettings } from "@/components/providers/SettingsProvider";
-import { Alert, Button, Field, Toggle, cx, inputClass } from "@/components/ui/primitives";
+import { Button, Field, Toggle, cx, inputClass } from "@/components/ui/primitives";
 import { detectSupport, recommendedThreads, resetEngine } from "@/lib/engine/client";
 import { REVIEW_PRESETS } from "@/lib/review/review";
 import { BOARD_THEMES, PIECE_SETS, boardTheme, pieceUrl } from "@/lib/appearance";
 import { playSound } from "@/lib/sound";
-import { clearAll } from "@/lib/storage/db";
-import { useLichessAuth } from "@/hooks/useLichessAuth";
-import { disconnectLichess, startLichessLogin } from "@/lib/lichess/auth";
+import { SITE } from "@/lib/site";
 
 type TabId = "appearance" | "sound" | "engine" | "data";
 const TABS: { id: TabId; label: string; Icon: typeof Palette }[] = [
@@ -38,11 +37,8 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 const swatchRing = "ring-offset-2 ring-offset-bg peer-checked:ring-2 peer-checked:ring-accent peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--focus)]";
 
 export function SettingsView() {
-  const { settings, update, reset } = useSettings();
+  const { settings, update, reset, closeSettings } = useSettings();
   const [support, setSupport] = useState<ReturnType<typeof detectSupport> | null>(null);
-  const [cleared, setCleared] = useState(false);
-  const lichess = useLichessAuth();
-  const [confirm, setConfirm] = useState(false);
   const [tab, setTab] = useState<TabId>("appearance");
 
   useEffect(() => {
@@ -146,6 +142,7 @@ export function SettingsView() {
                 <Toggle label="Board coordinates" checked={settings.showCoordinates} onChange={(v) => update({ showCoordinates: v })} />
                 <Toggle label="Show legal moves" checked={settings.showLegalMoves} onChange={(v) => update({ showLegalMoves: v })} />
                 <Toggle label="Move-quality badges on the board" checked={settings.showBoardBadges} onChange={(v) => update({ showBoardBadges: v })} />
+                <Toggle label="Evaluation bar" checked={settings.showEvalBar} onChange={(v) => update({ showEvalBar: v })} />
                 <Toggle label="Engine arrows" checked={settings.showArrows} onChange={(v) => update({ showArrows: v })} />
                 <Toggle label="Piece animations" checked={settings.animations} onChange={(v) => update({ animations: v })} />
                 <Toggle label="Colour-blind-safe move colours" checked={settings.colorBlindSafe} onChange={(v) => update({ colorBlindSafe: v })} />
@@ -190,9 +187,9 @@ export function SettingsView() {
             </Group>
             <Group title="Coach & accessibility">
               <div className="divide-y divide-border">
-                <Toggle label="Coach speaks its feedback aloud" description="Uses your browser's built-in voice." checked={settings.coachVoice} onChange={(v) => update({ coachVoice: v })} />
+                <Toggle label="Coach speaks its feedback aloud" checked={settings.coachVoice} onChange={(v) => update({ coachVoice: v })} />
                 <Toggle label="Announce moves to screen readers" checked={settings.announceMoves} onChange={(v) => update({ announceMoves: v })} />
-                <Toggle label="Glossary hints" description="Explain chess terms as you meet them." checked={settings.showGlossaryHints} onChange={(v) => update({ showGlossaryHints: v })} />
+                <Toggle label="Glossary hints" checked={settings.showGlossaryHints} onChange={(v) => update({ showGlossaryHints: v })} />
               </div>
             </Group>
           </>
@@ -204,7 +201,6 @@ export function SettingsView() {
               <div className="divide-y divide-border">
                 <Toggle
                   label="Force single-threaded engine"
-                  description="Use this if analysis is unstable on your device."
                   checked={settings.engineMode === "single"}
                   onChange={(v) => engineChange({ engineMode: v ? "single" : "auto" })}
                 />
@@ -264,51 +260,19 @@ export function SettingsView() {
                   <input {...p} className={inputClass} value={settings.chessComUsername} maxLength={25} onChange={(e) => update({ chessComUsername: e.target.value.trim() })} autoComplete="username" />
                 )}
               </Field>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4">
-                <div className="text-sm">
-                  <p className="font-medium">Lichess account</p>
-                  <p className="text-ink-3">{lichess ? `Connected${lichess.username ? ` as ${lichess.username}` : ""} · used for the opening explorer` : "Optional · unlocks the opening explorer"}</p>
-                </div>
-                {lichess ? (
-                  <Button size="sm" onClick={() => void disconnectLichess()}>
-                    Disconnect
-                  </Button>
-                ) : (
-                  <Button size="sm" onClick={() => void startLichessLogin(window.location.pathname + window.location.search)}>
-                    Connect Lichess
-                  </Button>
-                )}
+              <div className="pt-2">
+                <Button onClick={reset}>Reset settings</Button>
               </div>
             </Group>
 
-            <Group title="Your data">
-              <p className="text-sm text-ink-2">Everything lives in this browser. Nothing is uploaded.</p>
-              {cleared ? <Alert tone="success">All saved games, reviews and cached data were deleted, and Lichess was disconnected.</Alert> : null}
-              <div className="flex flex-wrap gap-2 pt-2">
-                {confirm ? (
-                  <>
-                    <Button
-                      variant="danger"
-                      onClick={async () => {
-                        await clearAll();
-                        await disconnectLichess();
-                        setCleared(true);
-                        setConfirm(false);
-                      }}
-                    >
-                      Yes, delete all local data
-                    </Button>
-                    <Button variant="ghost" onClick={() => setConfirm(false)}>
-                      Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <Button variant="danger" onClick={() => setConfirm(true)}>
-                    Delete all local data
-                  </Button>
-                )}
-                <Button onClick={reset}>Reset settings</Button>
-              </div>
+
+            <Group title="About">
+              <nav aria-label="About Tempo" className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                <Link href="/about" onClick={closeSettings} className="text-ink-2 underline-offset-2 hover:text-ink hover:underline">About &amp; licenses</Link>
+                <Link href="/privacy" onClick={closeSettings} className="text-ink-2 underline-offset-2 hover:text-ink hover:underline">Privacy</Link>
+                <Link href="/terms" onClick={closeSettings} className="text-ink-2 underline-offset-2 hover:text-ink hover:underline">Terms</Link>
+                <a href={SITE.repoUrl} className="text-ink-2 underline-offset-2 hover:text-ink hover:underline" rel="noopener noreferrer" target="_blank">Source code</a>
+              </nav>
             </Group>
           </>
         ) : null}

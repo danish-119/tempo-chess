@@ -6,7 +6,6 @@ import { buildReview, REVIEW_PRESETS } from "@/lib/review/review";
 import type { PositionEval } from "@/lib/review/types";
 import {
   __resetStorageForTests,
-  clearAll,
   deleteGame,
   getGame,
   getReview,
@@ -79,7 +78,6 @@ describe("time & phases", () => {
 describe("storage", () => {
   beforeEach(async () => {
     __resetStorageForTests();
-    await clearAll();
   });
 
   it("saves, lists, reads and deletes games with their reviews and cards", async () => {

@@ -1,6 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { docsReady } from "@/lib/account/docs";
+import { subscribeAccount } from "@/lib/account/session";
+import { boardTheme } from "@/lib/appearance";
 import { DEFAULT_SETTINGS, type Settings, loadSettings, saveSettings } from "@/lib/settings";
 
 interface SettingsContextValue {
@@ -21,6 +24,14 @@ function applyTheme(theme: Settings["theme"]) {
   else root.setAttribute("data-theme", theme);
 }
 
+/** The chosen board colours, for everything that draws squares (mini boards, quizzes, previews), not just the main board. */
+function applyBoardTheme(id: string) {
+  const t = boardTheme(id);
+  const root = document.documentElement;
+  root.style.setProperty("--sq-light", t.light);
+  root.style.setProperty("--sq-dark", t.dark);
+}
+
 function applyColorBlind(on: boolean) {
   const root = document.documentElement;
   if (on) root.setAttribute("data-cb", "on");
@@ -34,14 +45,26 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const openSettings = useCallback(() => setSettingsOpen(true), []);
   const closeSettings = useCallback(() => setSettingsOpen(false), []);
 
+  // Take the account's settings once they are loaded (and again after signing in or out).
   useEffect(() => {
-    const loaded = loadSettings();
-    // Hydrate from localStorage after mount (not available during prerender).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSettings(loaded);
-    setReady(true);
-    applyTheme(loaded.theme);
-    applyColorBlind(loaded.colorBlindSafe);
+    const sync = () => {
+      const loaded = loadSettings();
+      setSettings(loaded);
+      applyTheme(loaded.theme);
+      applyColorBlind(loaded.colorBlindSafe);
+      applyBoardTheme(loaded.boardTheme);
+    };
+    let alive = true;
+    void docsReady().then(() => {
+      if (!alive) return;
+      sync();
+      setReady(true);
+    });
+    const off = subscribeAccount(() => void docsReady().then(() => alive && sync()));
+    return () => {
+      alive = false;
+      off();
+    };
   }, []);
 
   const update = useCallback((patch: Partial<Settings>) => {
@@ -50,6 +73,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       saveSettings(next);
       if (patch.theme) applyTheme(next.theme);
       if (patch.colorBlindSafe !== undefined) applyColorBlind(next.colorBlindSafe);
+      if (patch.boardTheme) applyBoardTheme(next.boardTheme);
       return next;
     });
   }, []);
@@ -58,6 +82,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     saveSettings(DEFAULT_SETTINGS);
     applyTheme(DEFAULT_SETTINGS.theme);
     applyColorBlind(DEFAULT_SETTINGS.colorBlindSafe);
+    applyBoardTheme(DEFAULT_SETTINGS.boardTheme);
     setSettings(DEFAULT_SETTINGS);
   }, []);
 

@@ -12,11 +12,14 @@ export function Dialog({
   onClose,
   title,
   children,
+  size = "lg",
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  /** "md" for short forms, "lg" (the default) for Settings. */
+  size?: "md" | "lg";
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -63,9 +66,9 @@ export function Dialog({
   if (!open) return null;
   return (
     <div className="no-print fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/45 p-3 sm:p-8" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="card my-auto w-full max-w-2xl bg-bg">
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`card my-auto w-full bg-bg ${size === "md" ? "max-w-xl" : "max-w-2xl"}`}>
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-bg px-5 py-3">
-          <h2 id={titleId} className="font-serif text-xl font-semibold">
+          <h2 id={titleId} className="font-serif text-lg font-semibold sm:text-xl">
             {title}
           </h2>
           <button

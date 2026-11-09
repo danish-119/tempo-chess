@@ -1,3 +1,4 @@
+import { readDoc, writeDoc } from "@/lib/account/docs";
 import { z } from "zod";
 
 export const SettingsSchema = z.object({
@@ -35,27 +36,15 @@ export const SettingsSchema = z.object({
 export type Settings = z.infer<typeof SettingsSchema>;
 
 export const DEFAULT_SETTINGS: Settings = SettingsSchema.parse({});
-export const SETTINGS_KEY = "tempo:settings:v1";
-
-/** Read settings from localStorage, tolerating missing or corrupt data. */
+/** Read settings from the account or guest session, tolerating missing or damaged data. */
 export function loadSettings(): Settings {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return defaultsForDevice();
-    const parsed = SettingsSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : defaultsForDevice();
-  } catch {
-    return defaultsForDevice();
-  }
+  const parsed = SettingsSchema.safeParse(readDoc<unknown>("settings", null));
+  return parsed.success ? parsed.data : defaultsForDevice();
 }
 
 export function saveSettings(s: Settings): boolean {
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-    return true;
-  } catch {
-    return false;
-  }
+  writeDoc("settings", s);
+  return true;
 }
 
 /** Lighter defaults for phones / low-core devices. */

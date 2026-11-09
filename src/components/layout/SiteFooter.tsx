@@ -16,12 +16,14 @@ const ICONS: Record<string, string> = {
 
 /** Full-screen app views have no footer so they fit in one viewport. */
 const APP_ROUTES = ["/analyze", "/play", "/practice"];
+/** On a phone the main tabs are one screen tall, so the footer is left to the landing and information pages. */
+const TAB_ROUTES = ["/review", "/learn", "/progress", "/editor"];
 
 export function SiteFooter() {
   const pathname = usePathname();
   if (APP_ROUTES.some((r) => pathname === r || pathname?.startsWith(`${r}/`))) return null;
   return (
-    <footer className={cx("no-print border-t border-border", pathname === "/" ? "land-dark" : "mt-16")}>
+    <footer className={cx("no-print border-t border-border", pathname === "/" ? "land-dark" : "mt-16", TAB_ROUTES.some((r) => pathname === r || pathname?.startsWith(`${r}/`)) && "max-md:hidden")}>
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 text-sm text-ink-2 sm:grid-cols-2">
         <div className="space-y-2">
           <p className="font-serif text-base text-ink">Tempo</p>

@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Puzzle } from "@/lib/puzzles";
+import { resetDocs } from "@/lib/account/docs";
 import { loadBest, pickRushPuzzle, rushTargetRating, saveBest } from "@/lib/rush";
 
 const puzzle = (id: string, rating: number): Puzzle => ({ id, fen: `fen-${id}`, moves: "e2e4 e7e5", rating, themes: [] });
 
 describe("puzzle rush", () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => resetDocs());
 
   it("ramps the target rating and caps it", () => {
     expect(rushTargetRating(0)).toBe(600);

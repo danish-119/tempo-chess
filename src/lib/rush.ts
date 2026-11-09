@@ -1,3 +1,4 @@
+import { readDoc, writeDoc } from "@/lib/account/docs";
 import type { Puzzle } from "@/lib/puzzles";
 
 /**
@@ -34,23 +35,14 @@ export function pickRushPuzzle(all: Puzzle[], index: number, seen: Set<string>, 
   return rest.length ? rest[Math.floor(random() * rest.length)] : null;
 }
 
-const bestKey = (mode: RushModeId) => `tempo:rush:best:${mode}`;
-
+/** Best scores per mode, kept in the account or the guest session. */
 export function loadBest(mode: RushModeId): number {
-  try {
-    return Number(localStorage.getItem(bestKey(mode))) || 0;
-  } catch {
-    return 0;
-  }
+  return Number(readDoc<Record<string, number>>("rush", {})[mode]) || 0;
 }
 
 /** Save if it is a new best; returns true when it was a record. */
 export function saveBest(mode: RushModeId, score: number): boolean {
   if (score <= loadBest(mode)) return false;
-  try {
-    localStorage.setItem(bestKey(mode), String(score));
-  } catch {
-    /* storage blocked */
-  }
+  writeDoc("rush", { ...readDoc<Record<string, number>>("rush", {}), [mode]: score });
   return true;
 }

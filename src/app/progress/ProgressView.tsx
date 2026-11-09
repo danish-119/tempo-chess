@@ -1,49 +1,51 @@
 "use client";
 
+import { useAccount } from "@/components/providers/AccountProvider";
 import { PageHeader } from "@/components/ui/PageHeader";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Brain, CalendarCheck, Download, Flame, Trash2, TrendingUp, Upload } from "lucide-react";
-import { Alert, ButtonLink, Button, Card, SectionTitle, cx } from "@/components/ui/primitives";
+import { useEffect, useMemo, useState } from "react";
+import { Brain, CalendarCheck, Crown, Flame, TrendingUp } from "lucide-react";
+import { Alert, Card, SectionTitle, cx } from "@/components/ui/primitives";
+import { ProgressSkeleton } from "@/components/ui/Skeleton";
 import { useProgress } from "@/hooks/useProgress";
 import {
   addDays,
   currentStreak,
   dailyPuzzleIndex,
   dateKey,
-  dueMistakes,
-  emptyProgress,
-  exportProgress,
   longestStreak,
-  mergeProgress,
-  parseProgress,
   totals,
 } from "@/lib/progress";
 import { loadPuzzles } from "@/lib/puzzles";
-import { getProgress, setProgress } from "@/lib/storage/db";
 
 const WEEKS = 16;
 
-function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: React.ReactNode; hint?: string }) {
+function Stat({ icon, label, short, value, hint }: { icon: React.ReactNode; label: string; short?: string; value: React.ReactNode; hint?: string }) {
   return (
-    <Card className="p-4">
-      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-3">
-        {icon} {label}
+    <Card className="p-2.5 sm:p-4">
+      <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-ink-3 sm:gap-1.5 sm:text-xs">
+        <span className="max-sm:hidden">{icon}</span>
+        {short ? (
+          <>
+            <span className="sm:hidden">{short}</span>
+            <span className="max-sm:hidden">{label}</span>
+          </>
+        ) : (
+          label
+        )}
       </p>
-      <p className="mt-1 font-serif text-3xl font-semibold tabular">{value}</p>
-      {hint ? <p className="text-xs text-ink-3">{hint}</p> : null}
+      <p className="mt-0.5 font-serif text-xl font-semibold tabular sm:mt-1 sm:text-3xl">{value}</p>
+      {hint ? <p className="text-xs text-ink-3 max-sm:hidden">{hint}</p> : null}
     </Card>
   );
 }
 
-/** Streak, rating estimate, daily puzzle, mistake bank and backup — all from this device's IndexedDB. */
+/** Streak, rating estimate, daily puzzle and endgames mastered, from the player's account or guest session. */
 export function ProgressView() {
+  const account = useAccount();
   const { progress, ready } = useProgress();
   const [today, setToday] = useState<string>("");
   const [dailyId, setDailyId] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
-  const [confirmReset, setConfirmReset] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = dateKey();
@@ -54,7 +56,7 @@ export function ProgressView() {
       .catch(() => setDailyId(null));
   }, []);
 
-  const stats = useMemo(() => (today ? { streak: currentStreak(progress, today), longest: longestStreak(progress), ...totals(progress), due: dueMistakes(progress, today).length } : null), [progress, today]);
+  const stats = useMemo(() => (today ? { streak: currentStreak(progress, today), longest: longestStreak(progress), ...totals(progress) } : null), [progress, today]);
 
   // Calendar: WEEKS columns of 7 days, ending with this week (Monday first).
   const cells = useMemo(() => {
@@ -74,93 +76,57 @@ export function ProgressView() {
 
   const daily = today ? progress.daily[today] : undefined;
 
-  const doExport = () => {
-    const blob = new Blob([exportProgress(progress)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `tempo-progress-${dateKey()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setMessage({ tone: "success", text: "Progress exported. Keep the file somewhere safe." });
-  };
-
-  const doImport = async (file: File) => {
-    if (file.size > 2 * 1024 * 1024) {
-      setMessage({ tone: "error", text: "That file is too large to be a Tempo progress backup." });
-      return;
-    }
-    const result = parseProgress(await file.text());
-    if (!result.ok) {
-      setMessage({ tone: "error", text: result.error });
-      return;
-    }
-    await setProgress(mergeProgress(await getProgress(), result.progress));
-    setMessage({ tone: "success", text: "Progress imported and merged with what you already have." });
-  };
-
-  if (!ready || !stats) return <p className="py-10 text-center text-sm text-ink-2">Loading your progress…</p>;
+  if (!ready || !stats) return <ProgressSkeleton />;
   const empty = stats.activeDays === 0;
 
   return (
-    <div className="space-y-4">
-      <PageHeader eyebrow="You" title="Progress" subtitle="Your streak, rating estimate, daily puzzle and mistake bank. Stored only on this device." />
+    <div className="space-y-3 sm:space-y-4">
+      <PageHeader eyebrow="You" title="Progress" phone={false} />
 
-      {empty ? (
-        <Alert tone="info" title="Your journey starts today">
-          Solve a puzzle, play a practice mode or review a game and your streak begins. Everything is stored privately on this device.
+      {account.status === "visitor" || (account.status === "user" && account.player.guest) ? (
+        <Alert tone="info" title="Keep your progress for good" className="max-sm:hidden">
+          As a guest, your progress is saved on this browser while you come back at least once a month.{" "}
+          <Link href="/account" className="font-semibold underline">Sign in with Google</Link> to keep it for good, on every device.
         </Alert>
+      ) : empty ? (
+        <Alert tone="info" title="Your journey starts today" className="max-sm:hidden" />
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-4 gap-2 sm:gap-3">
         <Stat icon={<Flame className="size-3.5 text-accent" aria-hidden />} label="Streak" value={`${stats.streak} ${stats.streak === 1 ? "day" : "days"}`} hint={`Longest: ${stats.longest}`} />
-        <Stat
-          icon={<TrendingUp className="size-3.5" aria-hidden />}
-          label="Puzzle rating"
-          value={progress.rating.games === 0 ? "—" : `≈${progress.rating.value}`}
-          hint={progress.rating.games < 10 ? "Solve 10 puzzles for a steadier estimate" : `From ${progress.rating.games} puzzles`}
-        />
-        <Stat icon={<CalendarCheck className="size-3.5" aria-hidden />} label="Solved first try" value={stats.solved} hint={`of ${stats.attempted} attempted`} />
-        <Stat icon={<Brain className="size-3.5" aria-hidden />} label="Active days" value={stats.activeDays} />
+        <Stat icon={<TrendingUp className="size-3.5" aria-hidden />} label="Puzzle rating" short="Rating" value={progress.rating.games === 0 ? "—" : `≈${progress.rating.value}`} hint={progress.rating.games < 10 ? "Solve 10 puzzles for a steadier estimate" : `From ${progress.rating.games} puzzles`} />
+        <Stat icon={<CalendarCheck className="size-3.5" aria-hidden />} label="Solved first try" short="Solved" value={stats.solved} hint={`of ${stats.attempted} attempted`} />
+        <Stat icon={<Brain className="size-3.5" aria-hidden />} label="Active days" short="Days" value={stats.activeDays} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="space-y-3 p-4">
-          <SectionTitle>Today&apos;s puzzle</SectionTitle>
-          {daily?.solved ? (
-            <Alert tone="success" title="Solved — nice work">
-              Come back tomorrow for a new one.
-            </Alert>
-          ) : (
-            <p className="text-sm text-ink-2">
-              {daily ? "You missed it earlier; you can try again." : "One puzzle a day, the same for everyone on the same date. It keeps your streak alive."}
-            </p>
-          )}
-          {dailyId ? (
-            <ButtonLink href={`/practice?mode=puzzles&id=${dailyId}&daily=1`} variant="primary">
-              {daily?.solved ? "Play it again" : "Solve today's puzzle"}
-            </ButtonLink>
-          ) : null}
-        </Card>
-
-        <Card className="space-y-3 p-4">
-          <SectionTitle>Mistake bank</SectionTitle>
-          <p className="text-sm text-ink-2">
-            {progress.mistakes.length === 0
-              ? "Add mistakes from a game review and Tempo brings them back at spaced intervals until you find the right move."
-              : `${stats.due} due today · ${progress.mistakes.length} saved in total.`}
-          </p>
-          <ButtonLink href="/practice?mode=mistakes" variant={stats.due > 0 ? "primary" : "secondary"}>
-            {stats.due > 0 ? `Practise ${stats.due} mistake${stats.due === 1 ? "" : "s"}` : "Open mistake bank"}
-          </ButtonLink>
-        </Card>
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
+        {dailyId ? (
+          <Link
+            href={`/practice?mode=puzzles&id=${dailyId}&daily=1`}
+            className="group flex flex-col gap-1 rounded-2xl border border-border bg-surface p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent hover:shadow-[var(--shadow)] active:scale-[0.985] sm:p-5"
+          >
+            <CalendarCheck className="size-5 text-accent" aria-hidden />
+            <span className="display mt-1 text-lg sm:text-2xl">Today&apos;s puzzle</span>
+            <span className="text-xs text-ink-3">{daily?.solved ? "Solved" : "Not solved yet"}</span>
+          </Link>
+        ) : (
+          <div className="rounded-2xl border border-border bg-surface p-3.5" aria-hidden />
+        )}
+        <Link
+          href="/practice?mode=endgames"
+          className="group flex flex-col gap-1 rounded-2xl border border-border bg-surface p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent hover:shadow-[var(--shadow)] active:scale-[0.985] sm:p-5"
+        >
+          <Crown className="size-5 text-accent" aria-hidden />
+          <span className="display mt-1 text-lg sm:text-2xl">Endgames</span>
+          <span className="text-xs text-ink-3">{progress.lessons.filter((l) => l.startsWith("endgame:")).length} mastered</span>
+        </Link>
       </div>
 
-      <Card className="p-4">
-        <SectionTitle className="mb-3">Last {WEEKS} weeks</SectionTitle>
-        <div className="overflow-x-auto">
+      <Card className="p-3 sm:p-4">
+        <SectionTitle className="mb-2 sm:mb-3">Last {WEEKS} weeks</SectionTitle>
+        <div className="relative overflow-x-auto">
           <ol
-            className="grid min-w-max grid-flow-col grid-rows-7 gap-1"
+            className="mx-auto grid w-max grid-flow-col grid-rows-7 gap-1"
             aria-label={`Activity calendar for the last ${WEEKS} weeks. ${stats.activeDays} active days in total.`}
           >
             {cells.map((c) => (
@@ -168,7 +134,7 @@ export function ProgressView() {
                 key={c.key}
                 title={`${c.key}: ${c.count} ${c.count === 1 ? "activity" : "activities"}`}
                 className={cx(
-                  "size-4 rounded-sm border border-border/60",
+                  "size-3 rounded-sm border border-border/60 sm:size-4",
                   c.future && "opacity-0",
                   !c.future && c.count === 0 && "bg-surface-2",
                   c.count >= 1 && c.count < 3 && "bg-accent/35",
@@ -185,59 +151,6 @@ export function ProgressView() {
         </div>
       </Card>
 
-      <Card className="space-y-3 p-4">
-        <SectionTitle>Backup</SectionTitle>
-        <p className="text-sm text-ink-2">
-          Tempo has no accounts, so your progress lives only in this browser. Export it to keep a copy or move it to another device; importing merges with what you have.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={doExport}>
-            <Download className="mr-1.5 size-4" aria-hidden /> Export progress
-          </Button>
-          <Button onClick={() => fileRef.current?.click()}>
-            <Upload className="mr-1.5 size-4" aria-hidden /> Import progress
-          </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json,.json"
-            className="sr-only"
-            tabIndex={-1}
-            aria-label="Import progress file"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = "";
-              if (f) void doImport(f);
-            }}
-          />
-          {confirmReset ? (
-            <>
-              <Button
-                variant="danger"
-                onClick={async () => {
-                  await setProgress(emptyProgress());
-                  setConfirmReset(false);
-                  setMessage({ tone: "success", text: "Progress reset." });
-                }}
-              >
-                Yes, reset everything
-              </Button>
-              <Button variant="ghost" onClick={() => setConfirmReset(false)}>
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button variant="ghost" onClick={() => setConfirmReset(true)}>
-              <Trash2 className="mr-1.5 size-4" aria-hidden /> Reset
-            </Button>
-          )}
-        </div>
-        {message ? <Alert tone={message.tone}>{message.text}</Alert> : null}
-      </Card>
-
-      <p className="text-center text-xs text-ink-3">
-        The rating is an estimate from the puzzles you solve here, not an official rating. <Link href="/practice" className="underline">Back to practice</Link>
-      </p>
     </div>
   );
 }

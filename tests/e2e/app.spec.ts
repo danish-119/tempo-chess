@@ -79,8 +79,9 @@ test.describe("Tempo", () => {
     await page.getByRole("button", { name: "Annotated PGN" }).click();
     const file = await download;
     expect(file.suggestedFilename()).toMatch(/_tempo\.pgn$/);
-    // Reopening a reviewed game shows the saved review and never starts a new one.
-    await page.reload();
+    // Reopening a reviewed game (from Your games) shows the saved review and never starts a new one.
+    await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Review" }).click();
+    await page.locator("section", { has: page.getByRole("heading", { name: "Your games" }) }).getByRole("link").first().click();
     await page.getByRole("tab", { name: "Review" }).click();
     await expect(page.getByRole("button", { name: /Next key moment/ })).toBeVisible({ timeout: 10_000 });
     await page.waitForTimeout(3000);
@@ -88,12 +89,14 @@ test.describe("Tempo", () => {
     await expect(page.getByRole("button", { name: /Next key moment/ })).toBeVisible();
   });
 
-  test("saved games survive a reload", async ({ page }) => {
+  test("a guest's imported game is listed under Your games for the rest of the visit", async ({ page }) => {
     await importPgn(page);
-    const url = page.url();
-    await page.reload();
-    await expect(page).toHaveURL(url);
-    await expect(page.getByText("Alice").first()).toBeVisible();
+    // Moving around inside the app keeps it (and so would a reload, once the visitor has saved something as a guest).
+    await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Review" }).click();
+    const list = page.getByRole("region", { name: "Your games" }).or(page.locator("section", { has: page.getByRole("heading", { name: "Your games" }) }));
+    await expect(list.getByText(/Alice/).first()).toBeVisible();
+    await list.getByRole("link").first().click();
+    await expect(page).toHaveURL(/\/analyze\?game=/);
   });
 
   test("reports an invalid PGN without crashing", async ({ page }) => {
@@ -167,7 +170,7 @@ test.describe("Tempo", () => {
 
   test("two players can play on one device", async ({ page }) => {
     await page.goto("/play");
-    await page.getByRole("radio", { name: /Play in Person/ }).click();
+    await page.getByRole("radio", { name: "In person" }).click();
     await page.getByRole("button", { name: "Start", exact: true }).click();
     // Before both sides have moved the game can only be aborted.
     await expect(page.getByRole("button", { name: "Abort" })).toBeVisible();
@@ -199,7 +202,7 @@ test.describe("Tempo", () => {
 
   test("friend mode can show two boards, one per player", async ({ page }) => {
     await page.goto("/play");
-    await page.getByRole("radio", { name: /Play in Person/ }).click();
+    await page.getByRole("radio", { name: "In person" }).click();
     await page.getByText("Two boards", { exact: true }).click();
     await page.getByRole("button", { name: "Start", exact: true }).click();
     await expect(page.getByRole("group", { name: /White's board/ })).toBeVisible();
@@ -225,6 +228,11 @@ test.describe("Tempo", () => {
     await page.goto("/practice");
     await page.getByRole("button", { name: /^Puzzles/ }).click();
     await expect(page).toHaveURL(/mode=puzzles/);
+    // First choose a level and a theme, as tiles; each choice is kept in the address.
+    await page.getByRole("radiogroup", { name: "Level" }).getByRole("radio", { name: /^Beginner/ }).click();
+    await expect(page).toHaveURL(/level=beginner/);
+    await page.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: /^Everything/ }).click();
+    await page.getByRole("button", { name: "Start solving" }).click();
     await expect(page.getByText(/to move — find the best move/)).toBeVisible({ timeout: 30_000 });
     await page.getByRole("button", { name: "Hint" }).click();
     await expect(page.getByText(/Look for a good move with your/)).toBeVisible();
@@ -275,9 +283,6 @@ test.describe("Tempo", () => {
     await page.getByRole("tab", { name: /Engine/ }).click();
     await expect(page.getByText("White wins · Mate in 9")).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: /h8=Q\+/ }).click();
-    await page.getByRole("tab", { name: "Explorer" }).click();
-    await expect(page.getByRole("button", { name: "Connect Lichess" })).toBeVisible();
-    await expect(page).toHaveURL(/panel=explorer/);
   });
 
   test("endgames list and coordinate trainer", async ({ page }) => {
@@ -312,11 +317,15 @@ test.describe("Tempo", () => {
   test("glossary search filters terms and links to lessons", async ({ page }) => {
     await page.goto("/learn/glossary");
     await page.getByRole("searchbox", { name: "Search the glossary" }).fill("en passant");
-    await expect(page.locator("dt", { hasText: "En passant" })).toBeVisible();
-    await expect(page.locator("dt")).toHaveCount(1);
+    const results = page.getByRole("list", { name: "Results" });
+    await expect(results.getByRole("button", { name: "En passant" })).toBeVisible();
+    await expect(results.getByRole("button")).toHaveCount(1);
+    await results.getByRole("button", { name: "En passant" }).click();
+    await expect(page.getByRole("complementary").getByRole("heading", { name: "En passant" })).toBeVisible();
     await page.getByRole("searchbox", { name: "Search the glossary" }).fill("");
-    await page.getByRole("radio", { name: "Tactics" }).click();
-    await page.locator("#fork").getByRole("link", { name: /Learn with examples/ }).click();
+    await page.getByRole("list", { name: "Topics" }).getByRole("button", { name: /^Tactics/ }).click();
+    await page.getByRole("list", { name: "Tactics terms" }).getByRole("button", { name: /^Fork/ }).click();
+    await page.getByRole("complementary").getByRole("link", { name: /Learn with examples/ }).click();
     await expect(page).toHaveURL(/\/learn\/tactics\?t=fork/);
   });
 
@@ -325,17 +334,34 @@ test.describe("Tempo", () => {
     await page.getByRole("link", { name: /Openings/ }).click();
     await page.getByRole("button", { name: /Italian Game/ }).click();
     await expect(page).toHaveURL(/o=italian/);
+    // Nothing is said over an empty board: the coach explains each move as it is played.
+    await expect(page.getByRole("status").filter({ hasText: "Press Watch" })).toBeVisible();
     await page.getByRole("button", { name: "Next move" }).click();
     await expect(page.getByText("e4 · 1/12")).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "White plays e4. White takes space in the centre" })).toBeVisible();
+    await page.getByRole("button", { name: "Carry on" }).click();
+    await expect(page.getByText("e5 · 2/12")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("status").filter({ hasText: "Black plays e5. Black does the same." })).toBeVisible();
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
     await page.getByRole("radio", { name: "Practice" }).click();
     await page.locator('[data-square="e2"]').click();
     await page.locator('[data-square="e4"]').click();
     await expect(page.getByText("Your move: play the main line")).toBeVisible({ timeout: 5_000 });
   });
 
-  test("learn tactics shows a real example", async ({ page }) => {
+  test("learn tactics: the coach explains, then you find it yourself with hints", async ({ page }) => {
     await page.goto("/learn/tactics?t=fork");
-    await expect(page.getByText(/Example 1/)).toBeVisible({ timeout: 15_000 });
+    const lesson = page.getByRole("region", { name: "Lesson" });
+    await expect(lesson.getByRole("heading", { name: "Fork" })).toBeVisible();
+    const status = lesson.getByRole("status");
+    await expect(status).toContainText(/(White|Black) to move\. Find the fork\./, { timeout: 15_000 });
+    await lesson.getByRole("button", { name: "Hint" }).click();
+    await expect(status).toContainText("Look at your");
+    await lesson.getByRole("button", { name: "Hint" }).click();
+    await expect(status).toContainText("Try ");
+    await lesson.getByRole("button", { name: "Show me" }).click();
+    await expect(status).toContainText("Here is the answer");
+    await expect(lesson.getByRole("button", { name: "Next practice" })).toBeVisible();
     await expect(page.getByRole("link", { name: /Practise \d+ puzzles/ })).toHaveAttribute("href", /theme=fork/);
   });
 
@@ -355,8 +381,12 @@ test.describe("Tempo", () => {
     await importPgn(page);
     await expect(page.getByRole("group", { name: /Analysis board/ })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Moves" })).toBeVisible();
-    await page.getByRole("button", { name: "Open menu" }).click();
-    await expect(page.getByRole("navigation", { name: "Mobile" })).toBeVisible();
+    // On a phone the sections are a bar of icons along the bottom edge, with no hamburger menu.
+    await expect(page.getByRole("button", { name: "Open menu" })).toHaveCount(0);
+    const bar = page.getByRole("navigation", { name: "Mobile" });
+    await expect(bar).toBeVisible();
+    await expect(bar.getByRole("link")).toHaveCount(5);
+    await expect(bar.getByRole("link", { name: "Review" })).toHaveAttribute("aria-current", "page");
     const width = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(width).toBeLessThanOrEqual(1);
   });

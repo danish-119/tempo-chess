@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { AccountProvider } from "@/components/providers/AccountProvider";
 import { SettingsProvider } from "@/components/providers/SettingsProvider";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { KeyboardHelp } from "@/components/layout/KeyboardHelp";
@@ -30,6 +31,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#e9e7e1" },
     { media: "(prefers-color-scheme: dark)", color: "#26282c" },
@@ -37,18 +39,17 @@ export const viewport: Viewport = {
 };
 
 // Applies the saved theme before first paint to avoid a light/dark flash.
-const THEME_SCRIPT = `try{var s=JSON.parse(localStorage.getItem("tempo:settings:v1")||"{}");if(s.theme==="light"||s.theme==="dark")document.documentElement.setAttribute("data-theme",s.theme);if(s.colorBlindSafe)document.documentElement.setAttribute("data-cb","on")}catch(e){}try{if(location.pathname==="/play"&&location.hash.indexOf("#o=")===0)document.documentElement.setAttribute("data-join","1")}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className="flex min-h-dvh flex-col antialiased">
+      <body className="flex min-h-dvh flex-col antialiased max-md:pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
         <a href="#main" className="skip-link">
           Skip to content
         </a>
+        <AccountProvider>
         <SettingsProvider>
           <SiteHeader />
           <main id="main" className="flex-1">
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <KeyboardHelp />
           <PwaRegister />
         </SettingsProvider>
+        </AccountProvider>
       </body>
     </html>
   );
