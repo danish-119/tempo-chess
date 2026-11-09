@@ -1,7 +1,7 @@
 "use client";
 
-import { ClipboardCopy, Download, ExternalLink, FileDown, ImageDown, Link2, PencilRuler, Printer, Save, Swords } from "lucide-react";
-import { downloadText, exportAnnotatedPgn, exportPgn, gameFileName } from "@/lib/chess/export";
+import { ClipboardCopy, ExternalLink, FileDown, ImageDown, Link2, PencilRuler, Printer, Save, Swords } from "lucide-react";
+import { downloadText, exportAnnotatedPgn, gameFileName } from "@/lib/chess/export";
 import type { ImportedGame } from "@/lib/chess/types";
 import { openingIdea } from "@/lib/openings";
 import type { GameReview } from "@/lib/review/types";
@@ -45,7 +45,6 @@ export function GameInfo({
     ["Moves", String(Math.ceil(game.moves.length / 2))],
   ];
   const hasMoves = game.moves.length > 0;
-  const pgnText = () => (game.source === "local" ? exportPgn(game) : game.originalPgn);
 
   return (
     <div className="space-y-5">
@@ -83,7 +82,7 @@ export function GameInfo({
       ) : null}
 
       <section className="no-print space-y-2">
-        <SectionTitle>Copy &amp; export</SectionTitle>
+        <SectionTitle>Copy &amp; share</SectionTitle>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => onCopy("fen")}>
             <ClipboardCopy className="size-4" aria-hidden /> Copy <Term id="fen">FEN</Term>
@@ -94,14 +93,8 @@ export function GameInfo({
           <Button size="sm" onClick={() => onCopy("pgn")} disabled={!hasMoves}>
             <ClipboardCopy className="size-4" aria-hidden /> Copy <Term id="pgn">PGN</Term>
           </Button>
-          <Button size="sm" onClick={() => downloadText(gameFileName(game), pgnText())} disabled={!hasMoves}>
-            <Download className="size-4" aria-hidden /> Download PGN
-          </Button>
           <Button size="sm" onClick={onShare} disabled={!hasMoves}>
             <Link2 className="size-4" aria-hidden /> Copy share link
-          </Button>
-          <Button size="sm" onClick={onImage}>
-            <ImageDown className="size-4" aria-hidden /> Board image
           </Button>
           {review ? (
             <>
@@ -114,22 +107,24 @@ export function GameInfo({
             </>
           ) : null}
         </div>
+      </section>
+
+      <section className="no-print space-y-2">
+        <SectionTitle>This position</SectionTitle>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={onSave}>
             <Save className="size-4" aria-hidden /> {persistable ? "Save" : "Save game"}
           </Button>
           <ButtonLink size="sm" newTab href={`/play?fen=${encodeURIComponent(fen)}`}>
-            <Swords className="size-4" aria-hidden /> Play this position vs Stockfish
+            <Swords className="size-4" aria-hidden /> Play from here
           </ButtonLink>
           <ButtonLink size="sm" newTab href={`/editor?fen=${encodeURIComponent(fen)}`}>
             <PencilRuler className="size-4" aria-hidden /> Edit position
           </ButtonLink>
+          <Button size="sm" onClick={onImage}>
+            <ImageDown className="size-4" aria-hidden /> Board image
+          </Button>
         </div>
-      </section>
-
-      <section className="space-y-1">
-        <SectionTitle>Current position</SectionTitle>
-        <code className="block break-all rounded bg-surface-2 p-2 font-mono text-xs text-ink-2">{fen}</code>
       </section>
     </div>
   );

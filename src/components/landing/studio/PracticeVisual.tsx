@@ -5,7 +5,6 @@ import { Board } from "@/components/board/Board";
 import { FACTS } from "@/content/landing";
 import { operaFen } from "@/content/opera-review";
 import { cx } from "@/lib/cx";
-import { REVIEW_INTERVALS } from "@/lib/progress";
 
 /** How many tiles there are; the scene reveals them one after another. */
 export const PRACTICE_TILES = 6;
@@ -87,19 +86,7 @@ export function PracticeVisual({ shown }: { shown: number }) {
         <Title title="Blindfold" text="Type your moves. Peek only if you must." />
       </Tile>
 
-      <Tile href="/practice?mode=mistakes" label="Mistake bank: re-learn your own mistakes" index={3} shown={shown}>
-        <ol className="mb-2 flex flex-wrap items-center gap-1 font-mono text-[10px] text-ink-2 sm:text-[11px]" aria-hidden>
-          {REVIEW_INTERVALS.slice(1).map((d, i) => (
-            <li key={d} className="flex items-center gap-1">
-              <span className={cx("rounded-full border px-2 py-0.5", i === 0 ? "border-accent text-accent" : "border-border")}>{d}d</span>
-              {i < REVIEW_INTERVALS.length - 2 ? <span className="text-ink-3">›</span> : null}
-            </li>
-          ))}
-        </ol>
-        <Title title="Mistake bank" text="Your own blunders return until you find the move." />
-      </Tile>
-
-      <Tile href="/progress" label="Progress: streaks and a daily puzzle" index={4} shown={shown}>
+      <Tile href="/progress" label="Progress: streaks and a daily puzzle" index={3} shown={shown}>
         <div className="mb-2 flex items-center gap-2" aria-hidden>
           <Flame className="size-5 shrink-0 text-accent" />
           <div className="grid grid-flow-col grid-rows-3 gap-[3px]">
@@ -108,10 +95,10 @@ export function PracticeVisual({ shown }: { shown: number }) {
             ))}
           </div>
         </div>
-        <Title title="Streaks & daily puzzle" text="A rating estimate and a calendar, on your device." />
+        <Title title="Streaks & daily puzzle" text="A rating estimate and a calendar, on every device." />
       </Tile>
 
-      <Tile href="/practice?mode=endgames" label="Endgames: win against perfect defence" index={5} shown={shown} className="col-span-2 hidden sm:flex">
+      <Tile href="/practice?mode=endgames" label="Endgames: win against perfect defence" index={4} shown={shown} className="col-span-2 hidden sm:flex">
         <div className="flex items-center gap-4">
           <span className="display text-4xl tabular text-accent">{FACTS.endgames}</span>
           <div>

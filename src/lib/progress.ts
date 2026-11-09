@@ -2,15 +2,12 @@ import { z } from "zod";
 import { hashString } from "@/lib/utils/hash";
 
 /**
- * Local progress: streaks, a puzzle-rating estimate, the daily puzzle and a
- * "mistake bank" of your own errors to re-practise. Everything lives in this
- * one document in IndexedDB (see storage/db.ts) and never leaves the device;
- * export/import is a plain JSON file you keep yourself.
+ * Progress: streaks, a puzzle-rating estimate, the daily puzzle and the
+ * lessons and endgames finished. It is one document, kept
+ * in the player's account (see storage/db.ts); export/import is a plain JSON
+ * file you keep yourself.
  */
 export const START_RATING = 1000;
-export const MAX_MISTAKES = 300;
-/** Leitner boxes: days until a mistake comes back after N correct answers in a row. */
-export const REVIEW_INTERVALS = [0, 1, 3, 7, 16, 35];
 
 const DaySchema = z.object({
   solved: z.number().int().min(0),
@@ -18,23 +15,6 @@ const DaySchema = z.object({
   other: z.number().int().min(0).default(0),
 });
 
-const MistakeSchema = z.object({
-  id: z.string().max(120),
-  /** Position before the mistaken move. */
-  fen: z.string().max(100),
-  /** What was played, and what the engine preferred (UCI + SAN). */
-  playedUci: z.string().max(8),
-  playedSan: z.string().max(16),
-  bestUci: z.string().max(8),
-  bestSan: z.string().max(16),
-  classification: z.string().max(20),
-  gameLabel: z.string().max(120).default(""),
-  addedOn: z.string(),
-  box: z.number().int().min(0).max(5),
-  /** Local date (YYYY-MM-DD) when it is next due. */
-  due: z.string(),
-});
-export type Mistake = z.infer<typeof MistakeSchema>;
 
 export const ProgressSchema = z.object({
   days: z.record(z.string(), DaySchema).default({}),
@@ -42,7 +22,6 @@ export const ProgressSchema = z.object({
   /** Daily puzzle results by date. */
   daily: z.record(z.string(), z.object({ puzzleId: z.string(), solved: z.boolean() })).default({}),
   rushBest: z.record(z.string(), z.number()).default({}),
-  mistakes: z.array(MistakeSchema).max(MAX_MISTAKES).default([]),
   /** Completed lesson ids. */
   lessons: z.array(z.string().max(60)).max(500).default([]),
 });
@@ -167,77 +146,4 @@ export function recordDaily(p: Progress, date: string, puzzleId: string, solved:
   const existing = p.daily[date];
   if (existing?.solved) return p; // already solved today
   return { ...p, daily: { ...p.daily, [date]: { puzzleId, solved } } };
-}
-
-// --- Mistake bank (spaced repetition) ---------------------------------------
-
-export function addMistakes(p: Progress, items: Omit<Mistake, "box" | "due" | "addedOn">[], today: string): Progress {
-  const known = new Set(p.mistakes.map((m) => m.id));
-  const fresh = items.filter((m) => !known.has(m.id)).map((m): Mistake => ({ ...m, addedOn: today, box: 0, due: today }));
-  if (fresh.length === 0) return p;
-  return { ...p, mistakes: [...p.mistakes, ...fresh].slice(-MAX_MISTAKES) };
-}
-
-export function dueMistakes(p: Progress, today: string): Mistake[] {
-  return p.mistakes.filter((m) => m.due <= today).sort((a, b) => a.due.localeCompare(b.due) || a.box - b.box);
-}
-
-/** Correct answers move a mistake to a later box; a miss sends it back to box 0 (due tomorrow). */
-export function gradeMistake(p: Progress, id: string, correct: boolean, today: string): Progress {
-  return {
-    ...p,
-    mistakes: p.mistakes.map((m) => {
-      if (m.id !== id) return m;
-      const box = correct ? Math.min(REVIEW_INTERVALS.length - 1, m.box + 1) : 0;
-      return { ...m, box, due: addDays(today, correct ? REVIEW_INTERVALS[box] : 1) };
-    }),
-  };
-}
-
-/** A mistake mastered in the last box is retired from the bank. */
-export function retireMastered(p: Progress): Progress {
-  return { ...p, mistakes: p.mistakes.filter((m) => m.box < REVIEW_INTERVALS.length - 1) };
-}
-
-// --- Export / import -----------------------------------------------------------
-
-export function exportProgress(p: Progress): string {
-  return JSON.stringify({ app: "tempo", kind: "progress", version: 1, exportedAt: new Date().toISOString(), progress: p }, null, 2);
-}
-
-export type ImportResult = { ok: true; progress: Progress } | { ok: false; error: string };
-
-export function parseProgress(text: string): ImportResult {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(text);
-  } catch {
-    return { ok: false, error: "That file is not valid JSON." };
-  }
-  const wrapper = z.object({ app: z.literal("tempo"), kind: z.literal("progress"), progress: z.unknown() }).safeParse(raw);
-  if (!wrapper.success) return { ok: false, error: "This is not a Tempo progress file." };
-  const parsed = ProgressSchema.safeParse(wrapper.data.progress);
-  if (!parsed.success) return { ok: false, error: "The progress data in this file is damaged." };
-  return { ok: true, progress: parsed.data };
-}
-
-/** Merge two progress documents (import adds to what you have instead of replacing it). */
-export function mergeProgress(a: Progress, b: Progress): Progress {
-  const days: Progress["days"] = { ...a.days };
-  for (const [k, d] of Object.entries(b.days)) {
-    const x = days[k];
-    days[k] = x ? { solved: Math.max(x.solved, d.solved), attempted: Math.max(x.attempted, d.attempted), other: Math.max(x.other, d.other) } : d;
-  }
-  const mistakes = new Map(a.mistakes.map((m) => [m.id, m]));
-  for (const m of b.mistakes) if (!mistakes.has(m.id)) mistakes.set(m.id, m);
-  const rushBest = { ...a.rushBest };
-  for (const [k, v] of Object.entries(b.rushBest)) rushBest[k] = Math.max(rushBest[k] ?? 0, v);
-  return {
-    days,
-    rating: b.rating.games > a.rating.games ? b.rating : a.rating,
-    daily: { ...b.daily, ...a.daily },
-    rushBest,
-    mistakes: [...mistakes.values()].slice(-MAX_MISTAKES),
-    lessons: [...new Set([...a.lessons, ...b.lessons])],
-  };
 }

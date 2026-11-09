@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { Board, type BoardArrow } from "@/components/board/Board";
 import { useSettings } from "@/components/providers/SettingsProvider";
-import { Alert, Button, ButtonLink, IconButton, SectionTitle, Spinner, Tabs, inputClass } from "@/components/ui/primitives";
+import { Alert, Button, ButtonLink, IconButton, SectionTitle, Tabs, inputClass } from "@/components/ui/primitives";
+import { BoardPageSkeleton, PanelSkeleton } from "@/components/ui/Skeleton";
 import { copyText, useAnnouncer } from "@/hooks/useAnnouncer";
 import { useEngine } from "@/hooks/useEngine";
 import { useLiveAnalysis } from "@/hooks/useLiveAnalysis";
@@ -44,7 +45,6 @@ import { type ReviewSettings, isError } from "@/lib/review/types";
 import { StorageError, getGame, saveGame } from "@/lib/storage/db";
 import { EngineLines } from "./EngineLines";
 import { TablebasePanel } from "./TablebasePanel";
-import { ExplorerPanel } from "./ExplorerPanel";
 import { EvalBar } from "./EvalBar";
 import { EvalGraph } from "./EvalGraph";
 import { GameInfo } from "./GameInfo";
@@ -53,7 +53,6 @@ import { MoveList } from "./MoveList";
 import { PlayerBar } from "./PlayerBar";
 import { CoachCard } from "./CoachCard";
 import { ReviewDetails, ReviewScore } from "./ReviewSummary";
-import { MistakeBankButton } from "./MistakeBankButton";
 import { GifExportButton } from "./GifExportButton";
 
 type LoadState = { status: "loading" } | { status: "ready"; game: ImportedGame } | { status: "error"; message: string };
@@ -75,13 +74,13 @@ export function AnalysisWorkspace() {
         .then((saved) => {
           if (cancelled) return;
           if (saved) setState({ status: "ready", game: saved.game });
-          else setState({ status: "error", message: "That game is not in this browser's saved games. It may have been deleted or saved in another browser." });
+          else setState({ status: "error", message: "That game is not in your saved games. It may have been deleted, or saved while signed in to another account." });
         })
         .catch((err: unknown) => {
           if (!cancelled) setState({ status: "error", message: err instanceof StorageError ? err.message : "Could not open the saved game." });
         });
     } else if (shareTokenFromHash(window.location.hash)) {
-      // A share link: unpack the game, keep it in this browser, then open it like any import.
+      // A share link: unpack the game, save it, then open it like any import.
       decodeShare(shareTokenFromHash(window.location.hash)!)
         .then(async (pgn) => {
           const game = parsePgnDatabase(pgn).games[0];
@@ -104,9 +103,7 @@ export function AnalysisWorkspace() {
 
   if (state.status === "loading") {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-10">
-        <Spinner label="Loading game…" />
-      </div>
+      <BoardPageSkeleton label="Loading the game…" className="mx-auto max-w-7xl px-4 py-4" />
     );
   }
   if (state.status === "error") {
@@ -127,7 +124,7 @@ const ACCEPT_MARGIN = 3;
 /** Sentinel value for real-time autoplay. */
 const REAL_TIME = -1;
 
-type SideTab = "review" | "moves" | "engine" | "explorer" | "game";
+type SideTab = "review" | "moves" | "engine" | "game";
 type MoveFilter = "all" | "errors" | "key";
 
 interface RetryState {
@@ -136,7 +133,7 @@ interface RetryState {
   playedUci?: string;
 }
 
-const SIDE_TABS: SideTab[] = ["review", "moves", "engine", "explorer", "game"];
+const SIDE_TABS: SideTab[] = ["review", "moves", "engine", "game"];
 
 function Workspace({ initialGame, initialPly, initialPanel }: { initialGame: ImportedGame; initialPly: number; initialPanel: string | null }) {
   const router = useRouter();
@@ -486,7 +483,6 @@ function Workspace({ initialGame, initialPly, initialPanel }: { initialGame: Imp
         </span>
       ),
     },
-    { id: "explorer", label: "Explorer" },
     { id: "game", label: "Game" },
   ];
 
@@ -611,7 +607,7 @@ function Workspace({ initialGame, initialPly, initialPanel }: { initialGame: Imp
             game.source === "local" ? (
               <ButtonLink href="/review" variant="primary" className="w-full">Import a game to review</ButtonLink>
             ) : reviewState.status === "loading-saved" ? (
-              <Spinner label="Checking for a saved review…" />
+              <PanelSkeleton label="Checking for a saved review…" lines={4} />
             ) : reviewState.status === "running" ? (
               <div className="space-y-2">
                 <p className="text-sm tabular" aria-live="polite">
@@ -625,7 +621,7 @@ function Workspace({ initialGame, initialPly, initialPanel }: { initialGame: Imp
             ) : review ? (
               <div className="space-y-4">
                 {reviewState.status === "done" && !reviewState.savedLocally ? (
-                  <Alert tone="warning">The review could not be saved in this browser; it will be lost on reload.</Alert>
+                  <Alert tone="warning">The review could not be saved; it will be lost on reload.</Alert>
                 ) : null}
                 <CoachCard
                   move={currentMoveReview}
@@ -652,7 +648,6 @@ function Workspace({ initialGame, initialPly, initialPanel }: { initialGame: Imp
                 />
                 <EvalGraph review={review} currentPly={ply} onSelect={goto} />
                 <ReviewScore review={review} metadata={game.metadata} />
-                <MistakeBankButton game={game} review={review} />
                 <GifExportButton game={game} review={review} orientation={orientation} />
                 <details className="no-print rounded-lg border border-border px-3 py-2">
                   <summary className="cursor-pointer text-sm font-medium">More stats</summary>
@@ -769,8 +764,6 @@ function Workspace({ initialGame, initialPly, initialPanel }: { initialGame: Imp
           ) : null}
 
           {tab === "engine" && !retry && !reviewing ? <TablebasePanel fen={fen} onPlay={(uci) => void onBoardMove(uci)} /> : null}
-
-          {tab === "explorer" ? <ExplorerPanel fen={fen} onPlay={(uci) => void onBoardMove(uci)} /> : null}
 
           {tab === "game" ? (
             <GameInfo

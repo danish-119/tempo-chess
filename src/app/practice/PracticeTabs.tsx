@@ -2,17 +2,16 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Brain, Crown, EyeOff, Flame, Grid3x3, Puzzle } from "lucide-react";
+import { ArrowLeft, Crown, EyeOff, Flame, Grid3x3, Puzzle } from "lucide-react";
 import { IconButton } from "@/components/ui/primitives";
 import { PracticeView } from "./PracticeView";
 import { PuzzleRush } from "./PuzzleRush";
 import { EndgameTrainer } from "./EndgameTrainer";
 import { CoordinateTrainer } from "./CoordinateTrainer";
 import { BlindfoldTrainer } from "./BlindfoldTrainer";
-import { MistakeBank } from "./MistakeBank";
 import { type ModeGroup, ModeChooser } from "./ModeChooser";
 
-type Mode = "puzzles" | "rush" | "endgames" | "coordinates" | "blindfold" | "mistakes";
+type Mode = "puzzles" | "rush" | "endgames" | "coordinates" | "blindfold";
 
 const MODES: { id: Mode; title: string; text: string; Icon: typeof Puzzle }[] = [
   { id: "puzzles", title: "Puzzles", text: "Solve at your own pace. Pick a level and theme.", Icon: Puzzle },
@@ -20,11 +19,10 @@ const MODES: { id: Mode; title: string; text: string; Icon: typeof Puzzle }[] = 
   { id: "endgames", title: "Endgames", text: "Win the key endgames against perfect defence.", Icon: Crown },
   { id: "coordinates", title: "Coordinates", text: "Find the square. Learn the board in 30-second rounds.", Icon: Grid3x3 },
   { id: "blindfold", title: "Blindfold", text: "Play a bot with the board hidden. Type your moves, listen to the replies.", Icon: EyeOff },
-  { id: "mistakes", title: "Mistake bank", text: "Re-practise your own mistakes from reviewed games, spaced over time.", Icon: Brain },
 ];
 
 const GROUPS: ModeGroup<Mode>[] = [
-  { title: "Tactics", blurb: "Spot the winning idea, at your own pace or against the clock.", ids: ["puzzles", "rush", "mistakes"] },
+  { title: "Tactics", blurb: "Spot the winning idea, at your own pace or against the clock.", ids: ["puzzles", "rush"] },
   { title: "Board skills", blurb: "Endgames, board vision and visualisation.", ids: ["endgames", "coordinates", "blindfold"] },
 ];
 
@@ -84,8 +82,6 @@ export function PracticeTabs() {
         <CoordinateTrainer />
       ) : mode === "blindfold" ? (
         <BlindfoldTrainer />
-      ) : mode === "mistakes" ? (
-        <MistakeBank />
       ) : (
         <PracticeView initialLevel={params.get("level")} initialTheme={params.get("theme")} initialId={params.get("id")} daily={params.get("daily") === "1"} />
       )}
