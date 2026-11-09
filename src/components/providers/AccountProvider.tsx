@@ -3,7 +3,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { authClient } from "@/lib/account/auth-client";
 import { loadDocs, resetDocs } from "@/lib/account/docs";
-import "@/lib/account/guest"; // a visitor's first save makes them a guest
 import { type AccountState, type Player, getAccount, setAccount, subscribeAccount } from "@/lib/account/session";
 import { ApiError, api } from "@/lib/api";
 import { resetMemory } from "@/lib/storage/db";

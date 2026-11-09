@@ -55,8 +55,8 @@ export default function PrivacyPage() {
       <h2 className="font-serif text-xl font-semibold text-ink">Without an account</h2>
       <p>
         You can use Tempo without an account. Just looking around stores nothing. The first time you save something (a finished lesson, a setting, a
-        game), we create a guest for this browser: a session cookie, a Tempo ID, and the same records as above, with a nickname and a picture if you
-        choose them, but no Google details. If you do not come back for 30 days, or you clear this browser&apos;s cookies, the guest is lost, and it is
+        game), Tempo asks whether to keep it as a guest or with Google. Only if you choose a guest do we create one for this browser: a session
+        cookie, a Tempo ID, and the same records as above, with the nickname and picture you chose, but no Google details. If you do not come back for 30 days, or you clear this browser&apos;s cookies, the guest is lost, and it is
         deleted with everything saved in it. Signing in with Google moves it into your account. Tempo never writes your data to your browser&apos;s
         storage; the service worker keeps an offline copy of the site itself (pages, engine and puzzles), which contains no personal data.
       </p>

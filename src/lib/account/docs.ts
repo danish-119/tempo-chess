@@ -7,8 +7,8 @@ import { accountReady, currentPlayer, firstSave } from "./session";
  * They are read from memory, so the app never waits for them. For a signed-in player they are loaded from the
  * account once after sign-in, and every change is saved to the account shortly after it is made. Each save names
  * the version it was based on; if another device saved in the meantime, the server says so and the newer copy is
- * taken as the base before this change is saved again on top of it. A visitor's first change makes them a guest
- * (see guest.ts), and from then on their records are saved the same way.
+ * taken as the base before this change is saved again on top of it. A visitor's first change asks how to save it
+ * (see SavePrompt); once they are a guest or signed in, their records are saved the same way.
  */
 export const DOC_KEYS = ["settings", "progress", "basics", "play", "shortcuts", "rush"] as const;
 export type DocKey = (typeof DOC_KEYS)[number];

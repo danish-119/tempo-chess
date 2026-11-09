@@ -56,5 +56,5 @@ export async function signedInPlayer(browser: Browser, prefix: string): Promise<
 export async function playAsGuest(page: Page, nickname: string): Promise<void> {
   await page.getByLabel("Your nickname").fill(nickname);
   await page.getByRole("radio", { name: "Picture 3" }).click();
-  await page.getByRole("button", { name: "Play as a guest" }).click();
+  await page.getByRole("button", { name: /^(Play|Save) as a guest$/ }).click();
 }

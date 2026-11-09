@@ -13,7 +13,7 @@ Browser
  ├─ React UI (src/app, src/components)
  │    └─ hooks: useEngine · useLiveAnalysis · useReview · useSound · useCoachVoice
  ├─ Web Worker: Stockfish 19 lite (WASM)  ← /engine/*.js|.wasm
- ├─ memory: the player's data (loaded from the API); a visitor's until their first save makes them a guest
+ ├─ memory: the player's data (loaded from the API); a visitor's until they choose guest or Google
  ├─ fetch → Tempo API (accounts and saved data, with the sign-in cookie)
  ├─ fetch → https://api.chess.com/pub/... · https://lichess.org/api/... (imports)
  ├─ WebSocket → Tempo API (a live game)
@@ -87,8 +87,10 @@ it loads their records (settings, progress, lesson progress, …) into memory; p
 once and is saved to the account 400 ms later with the version it was based on; a `409` means another device saved
 first, so the app re-bases on the newer version and saves again. Games and reviews are written straight to the API.
 Offline (bots and the coach still work), saves wait and are sent when the connection returns. A visitor's changes
-stay in memory until the first one: that starts a guest session (`src/lib/account/guest.ts`) and uploads everything
-held in memory, so nothing done before that moment is lost. Nothing is written to browser storage; the session is a
+stay in memory. Their first one opens a dialog (`src/components/account/SavePrompt.tsx`, once per page load) asking
+whether to save as a guest or with Google; either way a session starts (`src/lib/account/guest.ts`; for Google, a
+guest holds the data while they are away at Google, and signing in moves it into the account) and everything held in
+memory is uploaded, so nothing done before that moment is lost. Closing the dialog keeps the changes in memory only. Nothing is written to browser storage; the session is a
 cookie.
 
 ### Classification (summary)
@@ -116,8 +118,8 @@ Miss, Book, Forced. Details: `/about#method` and `src/lib/review/classify.ts`.
 - **Identity.** Every player has a display name (from Google, changeable, 2 to 24 characters, not unique) and a
   **Tempo ID** that we assign when the account is created: 7 characters from the game-code alphabet (about 27 billion
   possibilities), unique, never chosen and never changed, so players with the same name are told apart.
-- **Guests** (Better Auth's anonymous plugin). A visitor becomes a guest on their first save (named "Guest"), or
-  by picking a nickname and a DiceBear picture to play online. A guest is a full player with a Tempo ID: they save
+- **Guests** (Better Auth's anonymous plugin). A visitor becomes a guest only by picking a nickname and a
+  DiceBear picture, when their first save asks or when they play online. A guest is a full player with a Tempo ID: they save
   and play like anyone else. Their session lasts 30 days and is renewed on use; a daily cron removes
   guests with no live session, with everything they saved. Signing in with Google from a guest session links the
   two (`onLinkAccount`): the guest's records, games, reviews and online games move to the account (where an existing

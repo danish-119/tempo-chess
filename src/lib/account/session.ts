@@ -1,7 +1,8 @@
 /**
  * Who is using the app right now:
  * - "loading": still finding out;
- * - "visitor": no session yet. Nothing is saved until they save something, which makes them a guest;
+ * - "visitor": no session yet. Their first save asks them to choose a guest nickname or Google; until they do, what
+ *   they change is kept in memory only;
  * - "user": a player with a session, either a Google account or a guest (`player.guest`). Their data lives on the
  *   Tempo server; a guest's lasts while they come back, on this browser.
  * A tiny store that React components and plain modules can both read.
@@ -55,13 +56,17 @@ export function accountReady(): Promise<AccountState> {
 }
 
 /**
- * A visitor's first save makes them a guest (see guest.ts, which registers how). Storage modules call this without
- * importing the sign-in code, which keeps them free of a dependency cycle.
+ * A visitor's first save asks them how to save: as a guest or with Google (the SavePrompt dialog registers itself
+ * here). It asks once per page load, so closing it is respected until they come back. Storage modules call this
+ * without importing any UI, which keeps them free of a dependency cycle.
  */
-let starter: (() => void) | null = null;
-export function onFirstSave(fn: () => void): void {
-  starter = fn;
+let ask: (() => void) | null = null;
+let asked = false;
+export function onFirstSave(fn: (() => void) | null): void {
+  ask = fn;
 }
 export function firstSave(): void {
-  if (state.status === "visitor") starter?.();
+  if (state.status !== "visitor" || asked || !ask) return;
+  asked = true;
+  ask();
 }

@@ -21,20 +21,40 @@ test.describe("accounts", () => {
     expect(stored).toEqual({ local: 0, idb: 0 });
   });
 
-  test("a visitor's first save makes them a guest, and it is still there after a reload", async ({ page }) => {
+  test("a visitor's first save asks how to keep it, and nobody becomes a guest without choosing", async ({ page }) => {
     await page.goto("/learn");
+    await page.getByRole("button", { name: "Settings" }).click();
+    await page.getByRole("dialog").getByLabel("Board coordinates").click();
+    await page.keyboard.press("Escape");
+    // Once Settings is closed, the first save asks: a guest nickname and picture, or Google.
+    const ask = page.getByRole("dialog", { name: "Save your progress" });
+    await expect(ask.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+    await ask.getByRole("button", { name: "Close" }).click();
+    expect(await hasSession(page)).toBe(false);
+    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+    // It asks once per visit: another change does not ask again.
+    await page.getByRole("button", { name: "Settings" }).click();
+    await page.getByRole("dialog").getByLabel("Board coordinates").click();
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(600);
+    await expect(ask).toHaveCount(0);
+  });
+
+  test("a visitor who saves as a guest keeps the change after a reload, and gets a Progress tab", async ({ page }) => {
+    await page.goto("/learn");
+    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Progress" })).toHaveCount(0);
     await page.getByRole("button", { name: "Settings" }).click();
     const coords = page.getByRole("dialog").getByLabel("Board coordinates");
     const before = await coords.isChecked();
     await coords.click();
-    // The quiet guest appears in the header, with a picture menu instead of "Sign in".
-    await expect(page.getByRole("button", { name: "Account: Guest" })).toBeVisible();
-    expect(await hasSession(page)).toBe(true);
     await page.keyboard.press("Escape");
+    await playAsGuest(page, "Quiet Owl");
+    await expect(page.getByRole("button", { name: "Account: Quiet Owl" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Progress" })).toBeVisible();
 
-    await page.waitForTimeout(800); // the save is sent a moment after the change
+    await page.waitForTimeout(800); // the change was uploaded when they chose
     await page.reload();
-    await page.getByRole("button", { name: "Account: Guest" }).click();
+    await page.getByRole("button", { name: "Account: Quiet Owl" }).click();
     await page.getByRole("menuitem", { name: "Settings" }).click();
     await expect(page.getByRole("dialog").getByLabel("Board coordinates")).toBeChecked({ checked: !before });
     expect(await page.evaluate(() => localStorage.length)).toBe(0);
@@ -52,7 +72,7 @@ test.describe("accounts", () => {
     await expect(page.getByRole("heading", { name })).toBeVisible();
     await expect(page.getByRole("button", { name: new RegExp(`Your Tempo ID is ${tag.split("").join(" ")}`) })).toBeVisible();
 
-    await page.getByRole("button", { name: "Change your name" }).click();
+    await page.getByRole("button", { name: "Change name and picture" }).click();
     await page.getByLabel("Your name").fill("Anna Karpova");
     await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Anna Karpova" })).toBeVisible();

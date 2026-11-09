@@ -12,12 +12,25 @@ const NAME = /^[\p{L}\p{N}][\p{L}\p{M}\p{N} _.'-]{1,23}$/u;
 
 /**
  * Play without an account: choose a nickname and a picture. A visitor becomes a guest (with a Tempo ID, saved on the
- * server while they keep coming back); a guest who is already here (made quietly by a first save) just sets their
- * name and picture. Signing in with Google instead keeps everything for good.
+ * server while they keep coming back); a guest who is already here without a picture (one that was held for a
+ * Google sign-in, or from before) just sets their name and picture. Signing in with Google instead keeps everything for good.
  *
  * `edit` is the guest changing their profile (a Save button, no Google choice). `onDone` runs once they are ready.
+ * `action` names the guest button; `keep` holds what a visitor did so far before going to Google.
  */
-export function GuestSetup({ next, onDone, edit = false }: { next: string; onDone?: () => void; edit?: boolean }) {
+export function GuestSetup({
+  next,
+  onDone,
+  edit = false,
+  action = "Play as a guest",
+  keep = false,
+}: {
+  next: string;
+  onDone?: () => void;
+  edit?: boolean;
+  action?: string;
+  keep?: boolean;
+}) {
   const account = useAccount();
   const isGuest = account.status === "user" && account.player.guest;
   const editing = edit && isGuest;
@@ -60,7 +73,7 @@ export function GuestSetup({ next, onDone, edit = false }: { next: string; onDon
         <AvatarPicker picture={picture} onChange={setPicture} options={options} onShuffle={shuffle} />
         {error ? <Alert tone="error">{error}</Alert> : null}
         <Button type="submit" variant="primary" className="h-11 w-full" loading={busy} disabled={!valid}>
-          {editing ? "Save" : "Play as a guest"}
+          {editing ? "Save" : action}
         </Button>
       </form>
 
@@ -69,7 +82,7 @@ export function GuestSetup({ next, onDone, edit = false }: { next: string; onDon
           <div className="flex items-center gap-3 text-xs text-ink-3">
             <span className="h-px flex-1 bg-border" /> or keep everything for good <span className="h-px flex-1 bg-border" />
           </div>
-          <GoogleButton callback={appUrl(next)} />
+          <GoogleButton callback={appUrl(next)} before={keep && !isGuest ? () => startGuest() : undefined} />
         </>
       )}
     </div>

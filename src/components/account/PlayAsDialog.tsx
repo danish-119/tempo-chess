@@ -6,8 +6,8 @@ import { Dialog } from "@/components/ui/Dialog";
 import { GuestSetup } from "./GuestSetup";
 
 /**
- * Online play needs a player: someone signed in with Google, or a guest with a nickname and a picture (a guest made
- * quietly by a first save is still just "Guest", with no picture). `needPlayer(action)` runs the action at once when
+ * Online play needs a player: someone signed in with Google, or a guest with a nickname and a picture (a guest held
+ * for a Google sign-in that was not finished is still just "Guest", with no picture). `needPlayer(action)` runs the action at once when
  * there is one; otherwise it opens a dialog to play as a guest or continue with Google, and runs the action as soon
  * as they have chosen. Google leaves the page and comes back to `next`, so the action is simply not run.
  */

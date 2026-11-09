@@ -1,4 +1,5 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 /** Scroll to a point inside the tall scene that contains the heading `id` (0 = its start, 1 = its end). */
 async function scrollScene(page: Page, id: string, fraction: number) {

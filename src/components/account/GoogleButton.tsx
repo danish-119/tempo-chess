@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { appUrl, authClient } from "@/lib/account/auth-client";
 
-/** "Continue with Google": the only way to sign in. `callback` is where Google sends the player back to. */
-export function GoogleButton({ callback, label = "Continue with Google" }: { callback: string; label?: string }) {
+/**
+ * "Continue with Google": the only way to sign in. `callback` is where Google sends the player back to; `before`
+ * runs first (to hold a visitor's unsaved progress on the server while they are away).
+ */
+export function GoogleButton({ callback, label = "Continue with Google", before }: { callback: string; label?: string; before?: () => Promise<unknown> }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -15,6 +18,13 @@ export function GoogleButton({ callback, label = "Continue with Google" }: { cal
         onClick={async () => {
           setBusy(true);
           setError(null);
+          try {
+            await before?.();
+          } catch {
+            setError("Google sign-in is not available right now. Please try again.");
+            setBusy(false);
+            return;
+          }
           const { error: e } = await authClient.signIn.social({ provider: "google", callbackURL: callback, errorCallbackURL: appUrl("/account") });
           if (e) {
             setError(e.status === 429 ? "Too many tries. Please wait a minute and try again." : "Google sign-in is not available right now. Please try again.");

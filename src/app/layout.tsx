@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SavePrompt } from "@/components/account/SavePrompt";
 import { AccountProvider } from "@/components/providers/AccountProvider";
 import { SettingsProvider } from "@/components/providers/SettingsProvider";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteFooter />
           <SettingsDialog />
           <KeyboardHelp />
+          <SavePrompt />
           <PwaRegister />
         </SettingsProvider>
         </AccountProvider>

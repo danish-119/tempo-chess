@@ -2,10 +2,12 @@ import { API_URL } from "@/lib/api";
 import { uploadMemory } from "@/lib/storage/db";
 import { authClient } from "./auth-client";
 import { adoptDocs } from "./docs";
-import { type Player, getAccount, onFirstSave, setAccount } from "./session";
+import { type Player, getAccount, setAccount } from "./session";
 
 /**
- * Guests: a visitor becomes one the first time they save something, or when they pick a nickname to play online.
+ * Guests: a visitor becomes one by choosing a nickname and a picture, when their first save asks or when they play
+ * online. (Choosing Google there also starts a guest for a moment, to hold what they did while they are away at
+ * Google; signing in then moves it into their account.)
  *
  * The server creates a guest session (a cookie; nothing is written to browser storage) and the guest gets a Tempo ID
  * like anyone else. Whatever the visitor did before that moment is still in memory, so it is uploaded straight
@@ -49,8 +51,3 @@ export function startGuest(profile?: GuestProfile): Promise<Player> {
   })();
   return starting;
 }
-
-// A visitor's first save makes them a guest, quietly.
-onFirstSave(() => {
-  startGuest().catch((err) => console.warn("Could not save as a guest:", err));
-});
