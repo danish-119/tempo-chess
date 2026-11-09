@@ -17,7 +17,12 @@ describe("learn: openings", () => {
     for (const o of OPENINGS) {
       const line = buildLine(START_FEN, o.moves.split(" "));
       expect(line.length, o.name).toBeGreaterThan(5);
-      expect(o.ideas.length).toBeGreaterThan(0);
+      expect(Object.keys(o.notes).length).toBeGreaterThan(5);
+      for (const [n, note] of Object.entries(o.notes)) {
+        expect(Number(n), `${o.id} note ${n} is on a real move`).toBeLessThanOrEqual(o.moves.split(" ").length);
+        expect(note, `${o.id} note ${n} is a plain sentence`).toMatch(/^[A-Z].*[.!?]$/);
+        expect(note, `${o.id} note ${n} has no brackets or dashes`).not.toMatch(/[()\u2013\u2014]/);
+      }
     }
   });
 

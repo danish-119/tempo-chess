@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function GlossaryPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-4">
-      <PageHeader eyebrow="Learn" title="Glossary" subtitle="Plain-language meanings of chess and engine terms." back={{ href: "/learn", label: "Back to Learn" }} />
+      <PageHeader eyebrow="Learn" title="Glossary" back={{ href: "/learn", label: "Back to Learn" }} />
       <GlossaryView />
     </div>
   );

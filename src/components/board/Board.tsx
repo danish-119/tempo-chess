@@ -30,6 +30,8 @@ export interface BoardProps {
   movableColor?: "w" | "b" | "both";
   /** Return true if the move was accepted. */
   onMove?: (uci: string) => boolean;
+  /** Draw `arrows` even when the engine-arrows setting is off (for lessons, where the arrows are the point). */
+  arrowsAlways?: boolean;
   id?: string;
   ariaLabel?: string;
   /** Move-quality badge drawn on a square (the destination of the move shown). */
@@ -65,6 +67,7 @@ export function Board({
   interactive = true,
   movableColor = "both",
   onMove,
+  arrowsAlways = false,
   id = "tempo-board",
   ariaLabel = "Chess board",
   badge,
@@ -173,10 +176,10 @@ export function Board({
 
   const boardArrows: Arrow[] = useMemo(
     () =>
-      settings.showArrows
+      settings.showArrows || arrowsAlways
         ? arrows.filter((a) => a.from !== a.to).map((a) => ({ startSquare: a.from, endSquare: a.to, color: ARROW_COLOR[a.kind] }))
         : [],
-    [arrows, settings.showArrows],
+    [arrows, settings.showArrows, arrowsAlways],
   );
 
   const spoken = useMemo(

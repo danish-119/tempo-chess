@@ -46,6 +46,7 @@ export function LineViewer({
   interactive = false,
   onMove,
   ariaLabel,
+  guide,
 }: {
   startFen: string;
   line: LinePly[];
@@ -56,6 +57,8 @@ export function LineViewer({
   interactive?: boolean;
   onMove?: (uci: string) => boolean;
   ariaLabel: string;
+  /** When given, the page plays the line itself (e.g. the coach, one move after each explanation) instead of the timer. */
+  guide?: { playing: boolean; toggle: () => void; stop: () => void };
 }) {
   const sound = useSound();
   const [playing, setPlaying] = useState(false);
@@ -69,8 +72,9 @@ export function LineViewer({
     setPly(next);
   };
 
+  const guided = !!guide;
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || guided) return;
     if (ply >= line.length) {
       const t = setTimeout(() => setPlaying(false), 0);
       return () => clearTimeout(t);
@@ -80,7 +84,7 @@ export function LineViewer({
       setPly(ply + 1);
     }, speed * 1000);
     return () => clearTimeout(t);
-  }, [playing, ply, line, speed, setPly, sound]);
+  }, [playing, guided, ply, line, speed, setPly, sound]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -89,13 +93,15 @@ export function LineViewer({
       if (interactive) return;
       if (e.key === " ") {
         e.preventDefault();
-        setPlaying((p) => !p);
+        if (guide) guide.toggle();
+        else setPlaying((p) => !p);
         return;
       }
       const map: Record<string, number> = { ArrowLeft: ply - 1, ArrowRight: ply + 1, Home: 0, End: line.length };
       if (e.key in map) {
         e.preventDefault();
         setPlaying(false);
+        guide?.stop();
         go(map[e.key], e.key === "ArrowRight");
       }
     };
@@ -109,14 +115,18 @@ export function LineViewer({
       {!interactive ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <StepControls
-            onFirst={() => { setPlaying(false); go(0); }}
-            onPrev={() => { setPlaying(false); go(ply - 1); }}
-            onNext={() => { setPlaying(false); go(ply + 1, true); }}
-            onLast={() => { setPlaying(false); go(line.length); }}
+            onFirst={() => { setPlaying(false); guide?.stop(); go(0); }}
+            onPrev={() => { setPlaying(false); guide?.stop(); go(ply - 1); }}
+            onNext={() => { setPlaying(false); guide?.stop(); go(ply + 1, true); }}
+            onLast={() => { setPlaying(false); guide?.stop(); go(line.length); }}
             canPrev={ply > 0}
             canNext={ply < line.length}
-            playing={playing}
-            onTogglePlay={() => { if (!playing && ply >= line.length) setPly(0); setPlaying((p) => !p); }}
+            playing={guide ? guide.playing : playing}
+            onTogglePlay={() => {
+              if (guide) return guide.toggle();
+              if (!playing && ply >= line.length) setPly(0);
+              setPlaying((p) => !p);
+            }}
             speed={speed}
             onSpeed={setSpeed}
           />

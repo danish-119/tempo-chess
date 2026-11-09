@@ -142,7 +142,7 @@ export const GLOSSARY: GlossaryEntry[] = [
   { id: "ply", term: "Ply / half-move", category: "engine", short: "One move by one side. A full move is two plies — White's and Black's." },
   { id: "principal-variation", term: "Principal variation (PV)", category: "engine", short: "The sequence of best moves the engine expects for both sides." },
   { id: "multipv", term: "MultiPV / engine lines", category: "engine", short: "Showing the engine's best few moves instead of only one.", long: "Useful to see whether a move is the only good option or one of several." },
-  { id: "opening-explorer", term: "Opening explorer", category: "engine", short: "Statistics of what was played from a position in real games, and how those games ended.", long: "Tempo's Explorer tab uses the Lichess masters and Lichess game databases (connect a free Lichess account to use it)." },
+  { id: "opening-explorer", term: "Opening explorer", category: "engine", short: "Statistics of what was played from a position in real games, and how those games ended." },
 
   // ---- Game review
   { id: "win-probability", term: "Win probability", category: "review", short: "An evaluation converted to a 0–100% chance-like score.", long: "Tempo classifies moves by how much win probability they lose, so the same pawn lost matters more in a balanced position than in an already-won one." },

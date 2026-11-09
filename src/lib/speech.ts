@@ -31,21 +31,37 @@ function voice(): SpeechSynthesisVoice | null {
 }
 
 /** Speak `text`, replacing anything still being said. Safe to call anywhere; no-op if unsupported. */
-export function speak(text: string, opts: { rate?: number; volume?: number } = {}): void {
+export function speak(text: string, opts: { rate?: number; volume?: number; onStart?: () => void; onEnd?: () => void } = {}): void {
   if (!speechSupported() || !text.trim()) return;
   try {
     const synth = window.speechSynthesis;
     synth.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    if (synth.paused) synth.resume();
+    // Chrome silently stops an utterance after about 15 seconds, so long text is queued one sentence at a time.
+    const parts = splitSentences(text);
     const v = voice();
-    if (v) u.voice = v;
-    u.lang = v?.lang ?? "en-US";
-    u.rate = opts.rate ?? DEFAULT_RATE;
-    u.volume = opts.volume ?? 1;
-    synth.speak(u);
+    parts.forEach((part, i) => {
+      const u = new SpeechSynthesisUtterance(part);
+      if (v) u.voice = v;
+      u.lang = v?.lang ?? "en-US";
+      u.rate = opts.rate ?? DEFAULT_RATE;
+      u.volume = opts.volume ?? 1;
+      if (i === 0 && opts.onStart) u.onstart = opts.onStart;
+      if (i === parts.length - 1 && opts.onEnd) {
+        u.onend = opts.onEnd;
+        u.onerror = opts.onEnd;
+      }
+      synth.speak(u);
+    });
   } catch {
     /* speech is a nicety; never break the game */
   }
+}
+
+/** Split text into sentences (keeping each one whole), so no single utterance runs long. */
+export function splitSentences(text: string): string[] {
+  const parts = text.match(/[^.!?]+(?:[.!?]+(?=\s|$)|$)/g) ?? [text];
+  return parts.map((p) => p.trim()).filter(Boolean);
 }
 
 export function stopSpeaking(): void {

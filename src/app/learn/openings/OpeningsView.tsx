@@ -1,16 +1,27 @@
 "use client";
 
+import { MiniBoard } from "@/components/learn/MiniBoard";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Lightbulb, RotateCcw, Search, Swords } from "lucide-react";
+import { ArrowLeft, Lightbulb, Pause, Play, RotateCcw, Search, Swords } from "lucide-react";
 import { ModeToggle } from "@/components/board/ModeToggle";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
-import { Alert, Button, ButtonLink, Card, IconButton } from "@/components/ui/primitives";
+import { Alert, Button, ButtonLink, Card, IconButton, cx } from "@/components/ui/primitives";
+import { useCoachVoice, VoiceToggle } from "@/hooks/useCoachVoice";
 import { useSound } from "@/hooks/useSound";
 import { START_FEN } from "@/lib/chess/types";
-import { OPENINGS, OPENING_GROUPS, type OpeningLesson, openingById } from "@/lib/learn/openings";
+import { OPENINGS, OPENING_GROUPS, type OpeningLesson, moveNarration, openingById } from "@/lib/learn/openings";
+import { stopSpeaking } from "@/lib/speech";
 import { setQuery } from "@/lib/url";
 import { LineViewer, buildLine } from "../LineViewer";
+
+/** The position each opening reaches after its main line, for the tiles. */
+const OPENING_FENS: Record<string, string> = Object.fromEntries(
+  OPENINGS.map((o) => {
+    const line = buildLine(START_FEN, o.moves.split(" "));
+    return [o.id, line[line.length - 1]?.fenAfter ?? START_FEN];
+  }),
+);
 
 export function OpeningsView() {
   const params = useSearchParams();
@@ -24,21 +35,30 @@ export function OpeningsView() {
 
   if (!opening) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         {OPENING_GROUPS.map((g) => (
-          <section key={g} className="space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-3">{g}</h2>
-            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {OPENINGS.filter((o) => o.group === g).map((o) => (
-                <li key={o.id}>
+          <section key={g} className="space-y-3" aria-labelledby={`g-${g}`}>
+            <h2 id={`g-${g}`} className="eyebrow">
+              {g}
+            </h2>
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+              {OPENINGS.filter((o) => o.group === g).map((o, i) => (
+                <li key={o.id} className="animate-[tile-pop_0.3s_ease-out_both]" style={{ animationDelay: `${i * 30}ms` }}>
                   <button
                     type="button"
                     onClick={() => open(o)}
-                    className="h-full w-full rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:border-accent hover:bg-accent-soft"
+                    className="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent hover:shadow-[var(--shadow)]"
                   >
-                    <span className="flex items-baseline justify-between gap-2">
-                      <span className="font-semibold">{o.name}</span>
-                      <span className="font-mono text-xs text-ink-3">{o.eco}</span>
+                    <span className="block aspect-square w-full p-2.5 pb-0" aria-hidden>
+                      <MiniBoard fen={OPENING_FENS[o.id]} className="!max-h-none !text-base sm:!text-lg" />
+                    </span>
+                    <span className="flex flex-1 flex-col gap-1 p-3">
+                      <span className="font-semibold leading-tight group-hover:text-accent">{o.name}</span>
+                      <span className="mt-auto flex items-center gap-2 text-xs text-ink-3">
+                        <span className="font-mono">{o.eco}</span>
+                        <span className={cx("inline-block size-2.5 rounded-full ring-1 ring-ink-3", o.side === "w" ? "bg-white" : "bg-black")} aria-hidden />
+                        {o.side === "w" ? "White" : "Black"}
+                      </span>
                     </span>
                   </button>
                 </li>
@@ -55,19 +75,103 @@ export function OpeningsView() {
 
 function OpeningLessonView({ opening, onBack }: { opening: OpeningLesson; onBack: () => void }) {
   const sound = useSound();
+  const voice = useCoachVoice();
+  const { say } = voice;
   const line = useMemo(() => buildLine(START_FEN, opening.moves.split(" ")), [opening.moves]);
   const [ply, setPly] = useState(0);
   const [mode, setMode] = useState<"watch" | "practice">("watch");
   const [feedback, setFeedback] = useState<"wrong" | "done" | null>(null);
   const [hint, setHint] = useState(false);
   const [mistakes, setMistakes] = useState(0);
+  const mistakesRef = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Watching with the coach: each move is played, explained, and the next follows once the coach has finished. */
+  const [guided, setGuided] = useState(false);
+  const [narration, setNarration] = useState("");
+  const run = useRef(0);
   const finalFen = line[line.length - 1].fenAfter;
   const yourTurn = (n: number) => (n % 2 === 0 ? "w" : "b") === opening.side;
+  const side = opening.side === "w" ? "White" : "Black";
 
-  useEffect(() => () => {
+  const clearTimer = () => {
     if (timer.current) clearTimeout(timer.current);
-  }, []);
+    timer.current = null;
+  };
+  useEffect(() => () => clearTimer(), []);
+
+  /** Say a line, then carry on: after the voice finishes, or after a reading pause when the voice is off. */
+  const sayThen = (text: string, next: () => void) => {
+    const mine = run.current;
+    let fired = false;
+    const go = () => {
+      if (fired || run.current !== mine) return;
+      fired = true;
+      clearTimer();
+      timer.current = setTimeout(() => run.current === mine && next(), 500);
+    };
+    setNarration(text);
+    // If a browser never reports the end of speech, carry on after a generous reading pause anyway.
+    timer.current = setTimeout(go, voice.on ? 2500 + text.length * 90 : 900 + text.length * 40);
+    if (voice.on) say(text, { onEnd: go });
+  };
+
+  const playMove = (n: number) => {
+    if (n >= line.length) {
+      sayThen(`That is the ${opening.name}. ${opening.summary}`, () => setGuided(false));
+      return;
+    }
+    sound.playSan(line[n].san);
+    setPly(n + 1);
+    sayThen(moveNarration(opening, n + 1, line[n].san), () => playMove(n + 1));
+  };
+
+  const stopWatch = () => {
+    run.current++;
+    clearTimer();
+    setGuided(false);
+    stopSpeaking();
+  };
+
+  const startWatch = (from: number) => {
+    run.current++;
+    clearTimer();
+    setMode("watch");
+    setFeedback(null);
+    setHint(false);
+    setGuided(true);
+    if (from === 0) {
+      setPly(0);
+      sayThen(`Let's watch the ${opening.name}. You play it as ${side}.`, () => playMove(0));
+    } else playMove(from);
+  };
+
+  // Stepping through by hand: the coach explains the move now on the board.
+  const stepRef = useRef(ply);
+  useEffect(() => {
+    if (guided || mode !== "watch" || stepRef.current === ply) {
+      stepRef.current = ply;
+      return;
+    }
+    stepRef.current = ply;
+    const text = ply > 0 ? moveNarration(opening, ply, line[ply - 1].san) : "";
+    const id = window.setTimeout(() => {
+      setNarration(text);
+      if (text) say(text);
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [ply, guided, mode, opening, line, say]);
+
+  /** What the practice box says; the coach says the same words. */
+  const practiceLine = (f: typeof feedback, misses: number, yours: boolean) =>
+    f === "done"
+      ? misses === 0
+        ? "Perfect. You know this line."
+        : `You finished the line with ${misses} ${misses === 1 ? "mistake" : "mistakes"}.`
+      : f === "wrong"
+        ? "That is not the main line. Try again."
+        : yours
+          ? "Your move: play the main line."
+          : "Your opponent is moving.";
 
   /** In practice mode, the opponent's moves play themselves. */
   const autoReply = (n: number) => {
@@ -75,18 +179,28 @@ function OpeningLessonView({ opening, onBack }: { opening: OpeningLesson; onBack
       timer.current = setTimeout(() => {
         sound.playSan(line[n].san);
         setPly(n + 1);
-        if (n + 1 >= line.length) setFeedback("done");
+        if (n + 1 >= line.length) {
+          setFeedback("done");
+          say(practiceLine("done", mistakesRef.current, false));
+        }
       }, 500);
-    } else if (n >= line.length) setFeedback("done");
+    } else if (n >= line.length) {
+      setFeedback("done");
+      say(practiceLine("done", mistakesRef.current, false));
+    }
   };
 
   const startPractice = () => {
-    if (timer.current) clearTimeout(timer.current);
+    run.current++;
+    clearTimer();
+    setGuided(false);
     setMode("practice");
     setPly(0);
     setFeedback(null);
     setHint(false);
     setMistakes(0);
+    mistakesRef.current = 0;
+    say(`Now you play it. Make ${side}'s moves from the main line.`);
     autoReply(0);
   };
 
@@ -96,7 +210,9 @@ function OpeningLessonView({ opening, onBack }: { opening: OpeningLesson; onBack
     if (uci !== expected.uci) {
       setFeedback("wrong");
       setMistakes((m) => m + 1);
+      mistakesRef.current += 1;
       sound.play("incorrect");
+      say(practiceLine("wrong", 0, true));
       return false;
     }
     sound.playSan(expected.san);
@@ -122,6 +238,7 @@ function OpeningLessonView({ opening, onBack }: { opening: OpeningLesson; onBack
           onMove={onMove}
           arrows={hint && expected ? [{ from: expected.from, to: expected.to, kind: "best" }] : []}
           ariaLabel={`${opening.name} board`}
+          guide={{ playing: guided, toggle: () => (guided ? stopWatch() : startWatch(ply >= line.length ? 0 : ply)), stop: stopWatch }}
         />
       </div>
 
@@ -131,46 +248,51 @@ function OpeningLessonView({ opening, onBack }: { opening: OpeningLesson; onBack
             <IconButton label="All openings" onClick={onBack}>
               <ArrowLeft className="size-5" aria-hidden />
             </IconButton>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="font-semibold">{opening.name}</p>
               <p className="text-xs text-ink-3">
-                {opening.eco} · for {opening.side === "w" ? "White" : "Black"}
+                {opening.eco} · for {side}
               </p>
             </div>
+            <VoiceToggle voice={voice} />
           </div>
-          <p className="text-sm text-ink-2">{opening.summary}</p>
-          <ul className="list-disc space-y-1 pl-5 text-sm">
-            {opening.ideas.map((i) => (
-              <li key={i}>{i}</li>
-            ))}
-          </ul>
-        </Card>
 
-        <Card className="space-y-3 p-4" aria-live="polite">
           <ModeToggle
             value={mode}
             onChange={(m) => {
               if (m === "practice") startPractice();
-              else {
-                setMode("watch");
-                setFeedback(null);
-                setHint(false);
-              }
+              else startWatch(0);
             }}
           />
 
-          {mode === "practice" ? (
+          {mode === "watch" ? (
             <>
+              <p className="min-h-16 rounded-xl border border-accent/40 bg-accent-soft px-3 py-2.5 text-sm leading-relaxed" role="status" aria-live="polite">
+                {narration || "Press Watch, and the coach will play the moves and explain each one."}
+              </p>
+              <Button size="sm" variant={guided ? "secondary" : "primary"} onClick={() => (guided ? stopWatch() : startWatch(ply >= line.length ? 0 : ply))}>
+                {guided ? <Pause className="size-4" aria-hidden /> : <Play className="size-4" aria-hidden />} {guided ? "Pause" : ply === 0 || ply >= line.length ? "Watch" : "Carry on"}
+              </Button>
+            </>
+          ) : (
+            <div aria-live="polite" className="space-y-3">
               {feedback === "done" ? (
-                <Alert tone="success" title={mistakes === 0 ? "Perfect — you know this line!" : `Line complete (${mistakes} mistake${mistakes === 1 ? "" : "s"})`} />
+                <Alert tone="success" title={practiceLine("done", mistakes, false)} />
               ) : feedback === "wrong" ? (
-                <Alert tone="warning" title="Not the main line — try again" />
+                <Alert tone="warning" title={practiceLine("wrong", 0, true)} />
               ) : (
-                <p className="text-sm font-semibold">{expected ? "Your move: play the main line" : "Opponent is moving…"}</p>
+                <p className="text-sm font-semibold">{practiceLine(null, 0, !!expected)}</p>
               )}
               <div className="flex flex-wrap gap-2">
                 {expected ? (
-                  <Button size="sm" onClick={() => setHint(true)} disabled={hint}>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setHint(true);
+                      say(`Try ${expected.san}.`);
+                    }}
+                    disabled={hint}
+                  >
                     <Lightbulb className="size-4" aria-hidden /> Hint
                   </Button>
                 ) : null}
@@ -178,8 +300,8 @@ function OpeningLessonView({ opening, onBack }: { opening: OpeningLesson; onBack
                   <RotateCcw className="size-4" aria-hidden /> Restart
                 </Button>
               </div>
-            </>
-          ) : null}
+            </div>
+          )}
         </Card>
 
         <div className="grid grid-cols-2 gap-2">

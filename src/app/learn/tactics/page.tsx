@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Suspense } from "react";
-import { Spinner } from "@/components/ui/primitives";
+import { TileGridSkeleton } from "@/components/ui/Skeleton";
 import { TacticsView } from "./TacticsView";
 
 export const metadata: Metadata = {
@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 export default function TacticsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-4">
-      <PageHeader eyebrow="Learn" title="Tactics" subtitle="Forks, pins, skewers and classic mating patterns, with real examples." back={{ href: "/learn", label: "Back to Learn" }} />
-      <Suspense fallback={<Spinner label="Loading…" />}>
+      <PageHeader eyebrow="Learn" title="Tactics" back={{ href: "/learn", label: "Back to Learn" }} />
+      <Suspense fallback={<TileGridSkeleton label="Loading the tactics…" />}>
         <TacticsView />
       </Suspense>
     </div>
