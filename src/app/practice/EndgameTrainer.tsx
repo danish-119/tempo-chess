@@ -1,20 +1,24 @@
 "use client";
 
+import { Castle, Check, Crown, Footprints, Gem, Shield, Sparkles, Trophy } from "lucide-react";
+import { MiniBoard } from "@/components/learn/MiniBoard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Chess, validateFen } from "chess.js";
-import { ArrowLeft, Lightbulb, RotateCcw, Undo2 } from "lucide-react";
+import { ArrowLeft, Lightbulb, RotateCcw, Undo2, Volume2, VolumeX } from "lucide-react";
 import { ModeToggle } from "@/components/board/ModeToggle";
 import { StepControls } from "@/components/board/StepControls";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { Board, type BoardArrow } from "@/components/board/Board";
-import { Alert, Button, Card, IconButton, Spinner } from "@/components/ui/primitives";
+import { Alert, Button, Card, IconButton, Spinner, cx } from "@/components/ui/primitives";
 import { useSound } from "@/hooks/useSound";
 import { applyUci } from "@/lib/chess/line";
 import { ENDGAME_LESSONS, type EndgameLesson, isWorse, lessonById, mistakeText } from "@/lib/endgames";
 import { type Outcome, fetchTablebase, outcomeOf, tablebaseApplies } from "@/lib/tablebase";
 import { setQuery } from "@/lib/url";
-import { record as recordProgress } from "@/hooks/useProgress";
-import { dateKey, recordActivity } from "@/lib/progress";
+import { record as recordProgress, useProgress } from "@/hooks/useProgress";
+import { dateKey, recordActivity, recordLesson } from "@/lib/progress";
+import { useSettings } from "@/components/providers/SettingsProvider";
+import { forSpeech, sanToSpeech, speak, speechSupported, stopSpeaking } from "@/lib/speech";
 
 /** A position from the board editor, trained like a lesson. */
 function customLesson(fen: string): EndgameLesson | null {
@@ -40,36 +44,80 @@ export function EndgameTrainer({ initialLesson, initialFen }: { initialLesson?: 
     setQuery({ lesson: l && l.id !== "custom" ? l.id : null, fen: l?.id === "custom" ? l.fen : null });
   };
 
-  if (!lesson) {
-    const groups = [...new Set(ENDGAME_LESSONS.map((l) => l.group))];
-    return (
-      <div className="mx-auto max-w-4xl space-y-5">
-        {groups.map((g) => (
-          <section key={g} className="space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-3">{g}</h2>
-            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {ENDGAME_LESSONS.filter((l) => l.group === g).map((l) => (
-                <li key={l.id}>
-                  <button
-                    type="button"
-                    onClick={() => open(l)}
-                    className="flex w-full items-center gap-3 rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:border-accent hover:bg-accent-soft"
-                  >
-                    <span>
-                      <span className="block font-semibold">{l.title}</span>
-                      <span className="text-xs text-ink-3">{l.goal === "win" ? "Win it" : "Hold the draw"}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-      </div>
-    );
-  }
+  if (!lesson) return <EndgameList onOpen={open} />;
 
   return <Trainer key={lesson.id + lesson.fen} lesson={lesson} onBack={() => open(null)} />;
+}
+
+const GROUP_ICON = { "Basic mates": Crown, "Pawn endings": Footprints, "Rook endings": Castle, "Queen endings": Gem, "Minor pieces": Sparkles } as const;
+
+function EndgameList({ onOpen }: { onOpen: (l: EndgameLesson) => void }) {
+  const { progress } = useProgress();
+  const groups = [...new Set(ENDGAME_LESSONS.map((l) => l.group))];
+  const done = (id: string) => progress.lessons.includes(`endgame:${id}`);
+  const total = ENDGAME_LESSONS.length;
+  const mastered = ENDGAME_LESSONS.filter((l) => done(l.id)).length;
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4">
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">
+            {mastered} of {total} endgames mastered
+          </p>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={mastered} aria-label="Endgames mastered">
+            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${(mastered / total) * 100}%` }} />
+          </div>
+        </div>
+      </div>
+      {groups.map((g) => {
+        const Icon = GROUP_ICON[g];
+        return (
+          <section key={g} className="space-y-3" aria-labelledby={`eg-${g}`}>
+            <h2 id={`eg-${g}`} className="flex items-center gap-2 font-semibold">
+              <Icon className="size-4 text-accent" aria-hidden /> {g}
+            </h2>
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {ENDGAME_LESSONS.filter((l) => l.group === g).map((l, i) => {
+                const blackToMove = l.fen.split(" ")[1] === "b";
+                const finished = done(l.id);
+                return (
+                  <li key={l.id} className="animate-[tile-pop_0.3s_ease-out_both]" style={{ animationDelay: `${i * 30}ms` }}>
+                    <button
+                      type="button"
+                      onClick={() => onOpen(l)}
+                      aria-label={`${l.title}: ${l.goal === "win" ? "win it" : "hold the draw"}${finished ? ", mastered" : ""}`}
+                      className="group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent hover:shadow-[var(--shadow)]"
+                    >
+                      {finished ? (
+                        <span className="absolute top-2 right-2 z-20 grid size-6 place-items-center rounded-full bg-good text-white shadow" aria-hidden>
+                          <Check className="size-4" />
+                        </span>
+                      ) : null}
+                      <span className="block aspect-square w-full p-2.5 pb-0" aria-hidden>
+                        <MiniBoard fen={l.fen} flip={blackToMove} className="!max-h-none !text-base" />
+                      </span>
+                      <span className="flex flex-1 flex-col gap-1.5 p-3">
+                        <span className="font-semibold leading-tight group-hover:text-accent">{l.title}</span>
+                        <span
+                          className={cx(
+                            "mt-auto inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                            l.goal === "win" ? "bg-good/15 text-good" : "bg-accent-soft text-accent",
+                          )}
+                        >
+                          {l.goal === "win" ? <Trophy className="size-3" aria-hidden /> : <Shield className="size-3" aria-hidden />}
+                          {l.goal === "win" ? "Win it" : "Hold the draw"}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
+  );
 }
 
 function Trainer({ lesson, onBack }: { lesson: EndgameLesson; onBack: () => void }) {
@@ -92,6 +140,12 @@ function Trainer({ lesson, onBack }: { lesson: EndgameLesson; onBack: () => void
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const extending = useRef(false);
+  // The coach talks you through the endgame: the goal and the tip, what went wrong, and the result.
+  const { settings, update: updateSettings } = useSettings();
+  /** Speech support is only known in the browser, so it is checked after the page has loaded. */
+  const [canSpeak, setCanSpeak] = useState(false);
+  const voiceOn = settings.coachVoice && canSpeak;
+  const introduced = useRef(false);
 
   /** Look up the position with the user to move and hand over the turn. */
   const evaluateTurn = useCallback(
@@ -125,7 +179,7 @@ function Trainer({ lesson, onBack }: { lesson: EndgameLesson; onBack: () => void
   const finish = (s: "won" | "held") => {
     setStatus(s);
     sound.play("victory");
-    recordProgress((p) => recordActivity(p, dateKey()));
+    recordProgress((p) => (lesson.id === "custom" ? recordActivity(p, dateKey()) : recordLesson(p, dateKey(), `endgame:${lesson.id}`)));
   };
 
   const onMove = (uci: string): boolean => {
@@ -327,6 +381,40 @@ function Trainer({ lesson, onBack }: { lesson: EndgameLesson; onBack: () => void
   const goalText = goal === "draw" ? `Hold the draw for ${lesson.holdMoves ?? 20} moves` : lesson.untilPromotion ? "Win: promote safely" : "Win: deliver checkmate";
   const side = userColor === "w" ? "White" : "Black";
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCanSpeak(speechSupported());
+    return () => stopSpeaking();
+  }, []);
+
+  // Introduce the endgame once the position has been looked up and it is your move.
+  useEffect(() => {
+    if (!voiceOn || demo || introduced.current || status !== "your-move") return;
+    introduced.current = true;
+    speak(`${lesson.title}. You are ${side}. ${goalText}. ${forSpeech(lesson.tip)}`);
+  }, [voiceOn, demo, status, lesson.title, lesson.tip, side, goalText]);
+
+  // Say what happened after your move.
+  useEffect(() => {
+    if (!voiceOn || demo) return;
+    if (status === "mistake") speak(`Not the right idea. ${forSpeech(message ?? "")}`);
+    else if (status === "won") speak(lesson.untilPromotion ? "Promoted. You kept the win!" : "Checkmate. Well done!");
+    else if (status === "held") speak("Draw held. Well defended!");
+    else if (status === "lost") speak(`Lost. ${forSpeech(message ?? "")}`);
+  }, [voiceOn, demo, status, message, lesson.untilPromotion]);
+
+  /** The hint, said out loud as well as drawn as an arrow. */
+  const showHint = () => {
+    setHint(true);
+    if (!voiceOn || !best) return;
+    try {
+      const m = new Chess(fen).move({ from: best.slice(0, 2), to: best.slice(2, 4), promotion: best[4] });
+      speak(`Try ${sanToSpeech(m.san)}.`);
+    } catch {
+      /* the arrow is enough */
+    }
+  };
+
   return (
     <div className="grid gap-4 lg:h-[calc(100dvh-8.5rem)] lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
       <div className="flex min-h-0 flex-col items-center">
@@ -379,6 +467,23 @@ function Trainer({ lesson, onBack }: { lesson: EndgameLesson; onBack: () => void
                 {side} · {goalText}
               </p>
             </div>
+            {canSpeak ? (
+              <IconButton
+                label={voiceOn ? "Coach voice on. Turn off" : "Coach voice off. Turn on"}
+                className="ml-auto !size-8"
+                onClick={() => {
+                  if (voiceOn) {
+                    updateSettings({ coachVoice: false });
+                    stopSpeaking();
+                  } else {
+                    updateSettings({ coachVoice: true });
+                    speak(`${lesson.title}. ${goalText}. ${forSpeech(lesson.tip)}`);
+                  }
+                }}
+              >
+                {voiceOn ? <Volume2 className="size-4" aria-hidden /> : <VolumeX className="size-4" aria-hidden />}
+              </IconButton>
+            ) : null}
           </div>
           <p className="text-sm text-ink-2">{lesson.tip}</p>
           <ModeToggle value={demo ? "watch" : "practice"} onChange={(m) => (m === "watch" ? startWatching() : tryIt())} />
@@ -419,7 +524,7 @@ function Trainer({ lesson, onBack }: { lesson: EndgameLesson; onBack: () => void
               </Button>
             ) : null}
             {status === "your-move" ? (
-              <Button size="sm" onClick={() => setHint(true)} disabled={hint || !best}>
+              <Button size="sm" onClick={showHint} disabled={hint || !best}>
                 <Lightbulb className="size-4" aria-hidden /> Hint
               </Button>
             ) : null}

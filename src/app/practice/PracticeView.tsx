@@ -1,10 +1,12 @@
 "use client";
 
+import { PuzzlePicker } from "./PuzzlePicker";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Eye, Lightbulb, RotateCcw, SkipForward, Timer } from "lucide-react";
 import { Board, type BoardArrow } from "@/components/board/Board";
-import { Alert, Button, Card, Spinner, cx, inputClass } from "@/components/ui/primitives";
+import { Alert, Button, Card, cx } from "@/components/ui/primitives";
+import { BoardPageSkeleton } from "@/components/ui/Skeleton";
 import { useSound } from "@/hooks/useSound";
 import { applyUci, parseUci, uciToSan } from "@/lib/chess/line";
 import { pieceHint } from "@/lib/coach";
@@ -38,6 +40,8 @@ export function PracticeView({ initialLevel, initialTheme, initialId, daily = fa
   const [loadError, setLoadError] = useState(false);
   const [levelId, setLevelIdState] = useState<LevelId>(() => LEVELS.find((l) => l.id === initialLevel)?.id ?? "intermediate");
   const [theme, setThemeState] = useState<string>(initialTheme ?? "");
+  /** First choose a level and a theme (the address has neither yet); a shared or daily puzzle goes straight in. */
+  const [picking, setPicking] = useState(!initialLevel && !initialId && !daily);
   const setLevelId = (id: LevelId) => {
     setLevelIdState(id);
     setQuery({ level: id });
@@ -220,7 +224,22 @@ export function PracticeView({ initialLevel, initialTheme, initialId, daily = fa
   };
 
   if (loadError) return <Alert tone="error">Puzzles could not be loaded. Please reload the page.</Alert>;
-  if (!all) return <Spinner label="Loading puzzles…" />;
+  if (!all) return <BoardPageSkeleton label="Loading puzzles…" />;
+  if (picking) {
+    return (
+      <PuzzlePicker
+        levelId={levelId}
+        theme={theme}
+        themes={themes}
+        onLevel={setLevelId}
+        onTheme={setTheme}
+        onStart={() => {
+          setQuery({ level: levelId, theme: theme || null });
+          setPicking(false);
+        }}
+      />
+    );
+  }
 
   const expected = current && (status === "solving" || status === "wrong") ? current.solution[step] : null;
   const hintSquare = hint >= 1 && expected ? parseUci(expected)?.from : null;
@@ -258,28 +277,21 @@ export function PracticeView({ initialLevel, initialTheme, initialId, daily = fa
 
       <div className="space-y-3">
         <Card className="space-y-3 p-4">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex flex-col gap-1 text-xs font-medium text-ink-2">
-              Level
-              <select className={inputClass} value={levelId} onChange={(e) => setLevelId(e.target.value as LevelId)}>
-                {LEVELS.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-xs font-medium text-ink-2">
-              Theme
-              <select className={inputClass} value={theme} onChange={(e) => setTheme(e.target.value)}>
-                <option value="">All themes</option>
-                {themes.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="flex items-center justify-between gap-2">
+            <p className="min-w-0 text-sm">
+              <span className="font-semibold">{level.label}</span>
+              <span className="text-ink-3"> · {theme ? (THEME_LABEL[theme] ?? theme) : "Everything"}</span>
+            </p>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setQuery({ level: null, theme: null, id: null });
+                setPicking(true);
+              }}
+            >
+              Change
+            </Button>
           </div>
           <dl className="grid grid-cols-3 text-center">
             <div><dt className="text-xs text-ink-3">Solved</dt><dd className="font-serif text-2xl tabular">{session.solved}</dd></div>

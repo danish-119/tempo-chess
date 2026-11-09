@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Check, Flame, Play, RotateCcw, Timer, Trophy, X } from "lucide-react";
 import { Board } from "@/components/board/Board";
-import { Alert, Button, Card, Spinner, cx } from "@/components/ui/primitives";
+import { Alert, Button, Card, cx } from "@/components/ui/primitives";
+import { BoardPageSkeleton } from "@/components/ui/Skeleton";
 import { useSound } from "@/hooks/useSound";
 import { applyUci, parseUci, uciToSan } from "@/lib/chess/line";
 import { type PreparedPuzzle, type Puzzle, isCorrectMove, loadPuzzles, preparePuzzle } from "@/lib/puzzles";
@@ -173,7 +174,7 @@ export function PuzzleRush({ initialMode }: { initialMode?: string | null }) {
   };
 
   if (loadError) return <Alert tone="error">Puzzles could not be loaded. Please reload the page.</Alert>;
-  if (!all) return <Spinner label="Loading puzzles…" />;
+  if (!all) return <BoardPageSkeleton label="Loading puzzles…" />;
 
   if (phase === "ready") {
     return (
