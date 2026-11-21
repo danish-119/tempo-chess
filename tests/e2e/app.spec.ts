@@ -82,7 +82,11 @@ test.describe("Tempo", () => {
     expect(file.suggestedFilename()).toMatch(/_tempo\.pgn$/);
     // Reopening a reviewed game (from Your games) shows the saved review and never starts a new one.
     await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Review" }).click();
-    await page.locator("section", { has: page.getByRole("heading", { name: "Your games" }) }).getByRole("link").first().click();
+    const yourGames = page.locator("section", { has: page.getByRole("heading", { name: "Your games" }) });
+    // The Reviewed filter lists it too.
+    await yourGames.getByRole("radio", { name: "Reviewed" }).click();
+    await expect(yourGames.getByRole("link").first()).toContainText("Reviewed");
+    await yourGames.getByRole("link").first().click();
     await page.getByRole("tab", { name: "Review" }).click();
     await expect(page.getByRole("button", { name: /Next key moment/ })).toBeVisible({ timeout: 10_000 });
     await page.waitForTimeout(3000);
